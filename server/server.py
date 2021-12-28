@@ -1,5 +1,4 @@
-from re import I
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -30,7 +29,7 @@ class User(db.Model):
     password = db.Column(db.String(80), nullable=False)
     '''
     The 'profile_image' is the profile picture of the user. This column will contain
-    the profile picture's filename and the file will be located in the profile_pics
+    the profile picture's filename and the file will be located in the 'profile_pics'
     directory in the server.
 
     The 'podcasts' variable will create a relationship with the Podcast table.
@@ -208,11 +207,13 @@ def login():
     user = User.query.filter_by(username=username).first()
 
     if user == None:
+        print("User does not exist.")
         return jsonify({
             "message": "User does not exist."
         })
     if user:
         if not bcrypt.check_password_hash(user.password, password):
+            print("Invalid password.")
             return jsonify({
                 "message": "Invalid password."
             })
@@ -226,15 +227,23 @@ def login():
             '''
             jwt_key = jwt.encode({"id": user.id, "exp": datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=86400)},
                                  os.environ.get("JWT_SECRET_KEY"), algorithm='HS256')
+            print("Verification successful.")
             return jsonify({
                 "message": "Verification successful!",
                 "token": jwt_key
             })
 
 
-# Dashboard API route.
-@app.route("/api/dashboard", methods=['GET'])
-def dashboard():
+@app.route("/api/profile-picture/<username>", methods=['GET'])
+def return_profile_picture(username):
+    user = User.query.filter_by(username=username).first()
+    if user:
+        return send_file(f'profile_pics/{user.profile_image}')
+    else:
+        return jsonify({"message": "User does not exist."})
+
+
+def verify_authentication():
     '''
     The code below will first try to get the token that was
     sent in the header from the frontend in order to retrieve user
@@ -255,25 +264,124 @@ def dashboard():
         try:
             decoded_id = jwt.decode(token, os.environ.get(
                 'JWT_SECRET_KEY'), algorithms=['HS256'])
-
-            user_id = decoded_id['id']
-            user = User.query.filter_by(id=user_id).first()
-
-            return jsonify({
-                "message": "Verification successful."
-            })
+            print("Verification successful.")
+            return "Verification successful.", decoded_id['id']
         except jwt.exceptions.ExpiredSignatureError:
-            return jsonify({
-                "message": "This token has expired."
-            })
+            print("This token has expired.")
+            return "This token has expired."
         except jwt.exceptions.DecodeError:
-            return jsonify({
-                "message": "Decoding error."
-            })
+            print("Decoding error.")
+            return "Decoding error."
     except:
-        return jsonify({
-            "message": "Something went wrong."
-        })
+        print("Something went wrong.")
+        return "Something went wrong."
+
+
+'''
+In the following routes where logins are required, each
+route will call the verify_authentication() function in order to make sure
+that a user is logged in, in order to view the information in those routes.
+'''
+
+
+# Dashboard API route.
+@app.route("/api/dashboard", methods=['GET'])
+def dashboard():
+    if request.method == 'GET':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            user = User.query.filter_by(id=response[1]).first()
+            return jsonify({"message": "Verification successful.", "user": user.username})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+
+# Account API route.
+@app.route("/api/account", methods=['GET', 'POST'])
+def account():
+    if request.method == "GET":
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            user = User.query.filter_by(id=response[1]).first()
+            return jsonify({"message": "Verification successful.", "userData": {
+                "firstName": user.first_name,
+                "lastName": user.last_name,
+                "username": user.username,
+                "email": user.email
+            }})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+    if request.method == 'POST':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            current_user = User.query.filter_by(id=response[1]).first()
+            username_valid = False
+            email_valid = False
+            first_name = request.json['data']['firstName']
+            last_name = request.json['data']['lastName']
+            username = request.json['data']['username']
+            email = request.json['data']['email']
+            '''
+            Lines 341-358 will check if there is any updates that are being made to the current
+            user's email or username. If there are any updates being made, the code will
+            first query to see if there is an email or username that already exists. If 
+            there is no email or username that exists, then the username_valid and email_valid
+            variables will be set to True, otherwise they will remain false.
+
+            If the user's email or user's username remains the same, then the variables will be
+            set to True.
+            '''
+            if current_user.username != username:
+                username_exists = User.query.filter_by(
+                    username=username).first()
+                if username_exists == None:
+                    username_valid = True
+                elif username_exists:
+                    username_valid = False
+            else:
+                username_valid = True
+
+            if current_user.email != email:
+                email_exists = User.query.filter_by(email=email).first()
+                if email_exists == None:
+                    email_valid = True
+                elif email_exists:
+                    email_valid = False
+            else:
+                email_valid = True
+            '''
+            Lines 366-375 will check if the username_valid and email_valid variables are True,
+            if they are true, then it's going to update the user's account settings.
+
+            If not, then it will send an error message to the frontend stating the that
+            the username or email already exists.
+            '''
+            if username_valid and email_valid:
+                current_user.first_name = first_name
+                current_user.last_name = last_name
+                current_user.username = username
+                current_user.email = email
+                db.session.commit()
+                return jsonify({"message": "Verification successful.", "accountUpdated": True})
+
+            if not username_valid or not email_valid:
+                return jsonify({"message": "Verification successful.", "accountUpdated": False, "error": "Username or email belongs to another user."})
+
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
 
 
 if __name__ == "__main__":
