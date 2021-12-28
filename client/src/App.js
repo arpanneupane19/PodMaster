@@ -4,6 +4,7 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Logout from "./pages/Logout";
 import Dashboard from "./pages/Dashboard";
+import Account from "./pages/Account";
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 
 function App() {
@@ -28,6 +29,10 @@ function App() {
 
         <Route exact path="/dashboard">
           <Dashboard />
+        </Route>
+
+        <Route exact path="/account">
+          <Account />
         </Route>
       </Switch>
     </Router>
