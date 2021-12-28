@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, Redirect } from "react-router-dom";
 
 export function Navbar() {
@@ -27,11 +27,16 @@ export function Navbar() {
 }
 
 export function LoggedInNavbar() {
+  const [loggedOut, setLoggedOut] = useState(false);
+
   const logout = () => {
     localStorage.removeItem("token");
-    return <Redirect to="/login" />;
+    setLoggedOut(true);
   };
 
+  if (loggedOut) {
+    return <Redirect to="/login" />;
+  }
   return (
     <div className="flex flex-col z-[100] fixed w-full">
       <nav className="navbar bg-white flex flex-row justify-between items-center py-4 px-6 font-sans antialiased tracking-wider">
