@@ -4,7 +4,7 @@ import { LoggedInNavbar } from "../components/Navbar";
 import axios from "axios";
 
 function Dashboard() {
-  const [isLoggedIn, setLoggedIn] = useState(true);
+  const [loggedIn, setLoggedIn] = useState(true);
   useEffect(() => {
     axios
       .get("/api/dashboard", {
@@ -20,7 +20,7 @@ function Dashboard() {
       });
   }, []);
 
-  if (!localStorage.getItem("token") || !isLoggedIn) {
+  if (!localStorage.getItem("token") || !loggedIn) {
     return <Redirect to="/login" />;
   }
 
