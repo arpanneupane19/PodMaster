@@ -243,6 +243,7 @@ def return_profile_picture(username):
         return jsonify({"message": "User does not exist."})
 
 
+# Auth verification
 def verify_authentication():
     '''
     The code below will first try to get the token that was
@@ -256,8 +257,9 @@ def verify_authentication():
 
     If there is a decoding error, then it will state that there was a decoding error.
 
-    If everything is fine, then it will go onto retrieve information regarding the user and
-    it will send that information back to the frontend.
+    If everything is fine, then it will return 'Verification successful', along with the
+    current user's id in case any data needs to be retrieved. This information is sent through
+    a tuple making it easily accessible.
     '''
     try:
         token = request.headers['x-access-token']
@@ -265,7 +267,7 @@ def verify_authentication():
             decoded_id = jwt.decode(token, os.environ.get(
                 'JWT_SECRET_KEY'), algorithms=['HS256'])
             print("Verification successful.")
-            return "Verification successful.", decoded_id['id']
+            return ("Verification successful.", decoded_id['id'])
         except jwt.exceptions.ExpiredSignatureError:
             print("This token has expired.")
             return "This token has expired."
@@ -376,6 +378,49 @@ def account():
             if not username_valid or not email_valid:
                 return jsonify({"message": "Verification successful.", "accountUpdated": False, "error": "Username or email belongs to another user."})
 
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+
+# API route for changing user passwords.
+@app.route("/api/change-password", methods=['GET', 'POST'])
+def change_password():
+    if request.method == 'GET':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            return jsonify({"message": "Verification successful."})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+    if request.method == "POST":
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            current_user = User.query.filter_by(id=response[1]).first()
+            current_password = request.json['data']['currentPassword']
+            new_password = request.json['data']['newPassword']
+            '''
+            Lines 416-423 will check if the current password that the user enters in 
+            is equal to the current password that is saved in the database.
+            If the passwords match, then a new password hash will be generated for the new
+            password and the user's password will be updated. Otherwise, it will not
+            be updated.
+            '''
+            if bcrypt.check_password_hash(current_user.password, current_password):
+                new_password_hash = bcrypt.generate_password_hash(
+                    new_password).decode("utf-8")
+                current_user.password = new_password_hash
+                db.session.commit()
+                return jsonify({"message": "Verification successful.", "passwordUpdated": True})
+            if not bcrypt.check_password_hash(current_user.password, current_password):
+                return jsonify({"message": "Verification successful.", "passwordUpdated": False})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
