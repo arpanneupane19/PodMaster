@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Logout from "./pages/Logout";
 import Dashboard from "./pages/Dashboard";
 import Account from "./pages/Account";
+import ChangePassword from "./pages/ChangePassword";
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 
 function App() {
@@ -33,6 +34,10 @@ function App() {
 
         <Route exact path="/account">
           <Account />
+        </Route>
+
+        <Route exact path="/change-password">
+          <ChangePassword />
         </Route>
       </Switch>
     </Router>
