@@ -6,6 +6,7 @@ import Logout from "./pages/Logout";
 import Dashboard from "./pages/Dashboard";
 import Account from "./pages/Account";
 import ChangePassword from "./pages/ChangePassword";
+import ProfilePicture from "./pages/ProfilePicture";
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 
 function App() {
@@ -38,6 +39,10 @@ function App() {
 
         <Route exact path="/change-password">
           <ChangePassword />
+        </Route>
+
+        <Route exact path="/update-profile-picture">
+          <ProfilePicture />
         </Route>
       </Switch>
     </Router>
