@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_file
+from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -7,6 +8,7 @@ import jwt
 import secrets
 from dotenv import load_dotenv
 import datetime
+from PIL import Image
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -132,7 +134,7 @@ class Follow(db.Model):
 @app.route("/api/register", methods=['POST'])
 def register():
     '''
-    Lines 130-135 will retrieve the data that was sent from the
+    The code below will retrieve the data that was sent from the
     frontend for account registration.
     '''
     user = request.json['user']
@@ -143,7 +145,7 @@ def register():
     password = user['password']
 
     '''
-    Lines 142-149 will try to check if a user with the given email
+    The code below will try to check if a user with the given email
     or username already exists or not. If a user does exist, it will
     return an error message to the frontend that a user already exists.
     '''
@@ -157,7 +159,7 @@ def register():
         })
 
     '''
-    Lines 160-171 will first check if there are no users with the given email and username
+    The code below will first check if there are no users with the given email and username
     and if there are no users then that means that this account can be created.
     In order to create the account, the plaintext password will first be hashed
     using the Flask-Bcrypt library. Then, the 'new_user' variable will create a new
@@ -183,7 +185,7 @@ def register():
 @app.route("/api/login", methods=['POST'])
 def login():
     '''
-    Lines 183-184 will retrieve the data that was sent from the
+    The code below will retrieve the data that was sent from the
     frontend for logging in.
     '''
     username = request.json['user']['username']
@@ -223,9 +225,9 @@ def login():
             'jwt_key' will encrypt the user's id by using the JWT_SECRET_KEY
             which is an environment variable that contains a hash used for encryption.
 
-            This key will expire in 86400 seconds (equivalent to 1 day) after being created.
+            This key will expire in 172800 seconds (equivalent to 2 days) after being created.
             '''
-            jwt_key = jwt.encode({"id": user.id, "exp": datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=86400)},
+            jwt_key = jwt.encode({"id": user.id, "exp": datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=172800)},
                                  os.environ.get("JWT_SECRET_KEY"), algorithm='HS256')
             print("Verification successful.")
             return jsonify({
@@ -333,7 +335,7 @@ def account():
             username = request.json['data']['username']
             email = request.json['data']['email']
             '''
-            Lines 341-358 will check if there is any updates that are being made to the current
+            The code below will check if there is any updates that are being made to the current
             user's email or username. If there are any updates being made, the code will
             first query to see if there is an email or username that already exists. If 
             there is no email or username that exists, then the username_valid and email_valid
@@ -361,7 +363,7 @@ def account():
             else:
                 email_valid = True
             '''
-            Lines 366-375 will check if the username_valid and email_valid variables are True,
+            The code below will check if the username_valid and email_valid variables are True,
             if they are true, then it's going to update the user's account settings.
 
             If not, then it will send an error message to the frontend stating the that
@@ -407,7 +409,7 @@ def change_password():
             current_password = request.json['data']['currentPassword']
             new_password = request.json['data']['newPassword']
             '''
-            Lines 416-423 will check if the current password that the user enters in 
+            The code below will check if the current password that the user enters in 
             is equal to the current password that is saved in the database.
             If the passwords match, then a new password hash will be generated for the new
             password and the user's password will be updated. Otherwise, it will not
@@ -421,6 +423,73 @@ def change_password():
                 return jsonify({"message": "Verification successful.", "passwordUpdated": True})
             if not bcrypt.check_password_hash(current_user.password, current_password):
                 return jsonify({"message": "Verification successful.", "passwordUpdated": False})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+
+# Function that will compress and save user files.
+def save_and_compress_file(file):
+    '''
+    The code below will save the profile picture that is submitted and will compress
+    it.
+
+    First, a random hex token is generated for the new filename. Then, using os.path.splitext(), the
+    file extension is retrieved. The variable 'new_filename' will combine the new filename from
+    the hex token with the file extension. Once the new filename has been created, the file
+    is then saved into the path that is defined by the 'file_path' variable.
+
+    Once all of that is complete, the Pillow module will compress the image to a size of 
+    250x250. Then the code will return the filename to the 'update_profile_picture()' 
+    so that the new changes can be saved into the database.
+    '''
+    random_hex = secrets.token_hex(16)
+    file_ext = os.path.splitext(secure_filename(file.filename))[1]
+    new_filename = random_hex + file_ext
+    file_path = os.path.join(app.root_path, 'profile_pics', new_filename)
+    file.save(file_path)
+
+    output_size = (250, 250)
+    i = Image.open(file)
+    i.thumbnail(output_size)
+    i.save(file_path)
+
+    return new_filename
+
+
+# API route for updating user profile pictures.
+@app.route("/api/update-profile-picture", methods=['GET', 'POST'])
+def update_profile_picture():
+    if request.method == 'GET':
+        response = verify_authentication()
+        if response[0] == 'Verification successful.':
+            return jsonify({"message": "Verification successful."})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+    if request.method == 'POST':
+        response = verify_authentication()
+        if response[0] == 'Verification successful.':
+            current_user = User.query.filter_by(id=response[1]).first()
+            '''
+            The code below will first retrieve the file that was passed into the request
+            and that file is contained in the 'file' variable. Then, the filename is returned
+            by the 'save_and_compress_file()'. This function is used to save the file
+            and compress it and then return the filename to this route so that the new changes
+            can be saved in the database.
+            '''
+            file = request.files['file']
+            filename = save_and_compress_file(file)
+            current_user.profile_image = filename
+            db.session.commit()
+            return jsonify({"message": "Verification successful.", "statusResponse": "Image uploaded successfully!"})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
