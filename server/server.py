@@ -3,6 +3,7 @@ from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+from flask_mail import Mail, Message
 import os
 import jwt
 import secrets
@@ -19,6 +20,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = os.environ.get("EMAIL")
+app.config['MAIL_PASSWORD'] = os.environ.get('PASSWORD')
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+mail = Mail(app)
 
 
 # User table schema
@@ -496,6 +504,110 @@ def update_profile_picture():
             return jsonify({"message": "Decoding error."})
         elif response == "Something went wrong":
             return jsonify({"message": "Something went wrong."})
+
+
+# Forgot Password API route.
+@app.route("/api/forgot-password", methods=['POST'])
+def forgot_password():
+    if request.method == 'POST':
+        '''
+        The code below will be used to send a reset link to a user's inbox.
+        First, the frontend will send an email and the URL to the frontend through a
+        POST request. Then, the email is used to query a user to check if they exist. 
+        If a user does not exist, the backend will send an error message 
+        to the frontend stating that the user does not exist.
+        If a user does exist, a token will be generated and a reset
+        link will be sent to the email along with the token.
+        '''
+        email = request.json['data']['email']
+        frontend_url = request.json['data']['frontendURL']
+        user = User.query.filter_by(email=email).first()
+        if user == None:
+            print("User does not exist and an email has not been sent.")
+            return jsonify({"userValid": False})
+
+        if user:
+            # This token will expire in 15 minutes.
+            jwt_key = jwt.encode({"email": user.email, "exp": datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=900)},
+                                 os.environ.get("JWT_SECRET_KEY"), algorithm='HS256')
+            mail_subject = "PodMaster Password Reset"
+            mail_body = f'''
+            Hello {user.first_name} {user.last_name}, 
+            
+            Your email was recently used to make a password reset for your PodMaster account. 
+
+            If you need to reset your password, please visit the link at the bottom of this email (this link will expire in 15 minutes). 
+            
+            If you did not make this request, you can simply ignore this email and no changes will be made.
+
+            Reset Link: {frontend_url}/reset-password/{jwt_key}
+
+            Sincerely,
+            PodMaster Security Team
+            '''
+
+            email = Message(
+                mail_subject, sender='noreply@demo.com', recipients=[user.email])
+            email.body = mail_body
+            mail.send(email)
+
+            print("User exists and email has been sent to reset password.")
+            return jsonify({'userValid': True, 'emailSent': True})
+
+
+# Reset Password API Route
+@app.route("/api/reset-password/<token>", methods=['GET', 'POST'])
+def reset_password(token):
+    '''
+    If a GET request is sent, the code will first check if the token that was passed
+    in the URL is valid. If it is valid, then it will send a verification successful message
+    to the frontend along with the user's email. If there is an error, it will send that error.
+    '''
+    if request.method == 'GET':
+        try:
+            decoded_email = jwt.decode(token, os.environ.get(
+                "JWT_SECRET_KEY"), algorithms=['HS256'])
+            user_email = decoded_email['email']
+            user = User.query.filter_by(email=user_email).first()
+            if user:
+                print("Verification successful.")
+                return jsonify({"message": "Verification successful.", "userEmail": user.email})
+        except jwt.exceptions.ExpiredSignatureError:
+            print("This token has expired.")
+            return jsonify({"message": "This token has expired."})
+        except jwt.exceptions.DecodeError:
+            print("Decoding error.")
+            return jsonify({"message": "Decoding error."})
+
+    '''
+    If a POST request is sent, the code will first check if the token that was passed 
+    in the URL is valid. If it is valid, then it will get the user's account by using the token,
+    then it will hash the new password, then that new password will be saved and a
+    verification successful message along with a 'passwordUpdated' value set to True will be sent
+    to the frontend.
+    
+    If there are any errors, it will send those errors.
+    '''
+    if request.method == 'POST':
+        try:
+            decoded_email = jwt.decode(token, os.environ.get(
+                "JWT_SECRET_KEY"), algorithms=['HS256'])
+            user_email = decoded_email['email']
+            user = User.query.filter_by(email=user_email).first()
+            if user:
+                new_password = request.json['data']['newPassword']
+                new_password_hash = bcrypt.generate_password_hash(
+                    new_password).decode('utf-8')
+                user.password = new_password_hash
+                db.session.commit()
+                print("Verification successful.")
+                return jsonify({"message": "Verification successful.", "passwordUpdated": True})
+        except jwt.exceptions.ExpiredSignatureError:
+            print("This token has expired.")
+            return jsonify({"message": "This token has expired."})
+        except jwt.exceptions.DecodeError:
+            print("Decoding error.")
+            return jsonify({"message": "Decoding error."})
 
 
 if __name__ == "__main__":
