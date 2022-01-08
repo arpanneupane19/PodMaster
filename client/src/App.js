@@ -3,6 +3,8 @@ import Home from "./pages/Home";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Logout from "./pages/Logout";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Account from "./pages/Account";
 import ChangePassword from "./pages/ChangePassword";
@@ -27,6 +29,14 @@ function App() {
 
         <Route exact path="/logout">
           <Logout />
+        </Route>
+
+        <Route exact path="/forgot-password">
+          <ForgotPassword />
+        </Route>
+
+        <Route exact path="/reset-password/:token">
+          <ResetPassword />
         </Route>
 
         <Route exact path="/dashboard">
