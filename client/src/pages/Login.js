@@ -37,7 +37,7 @@ function Login() {
     });
   };
 
-  if (loggedIn) {
+  if (loggedIn || localStorage.getItem("token")) {
     return <Redirect to="/dashboard" />;
   }
 

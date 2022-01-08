@@ -1,8 +1,11 @@
 import React from "react";
 import { Navbar } from "../components/Navbar";
-import { Link } from "react-router-dom";
+import { Link, Redirect } from "react-router-dom";
 
 function Home() {
+  if (localStorage.getItem("token")) {
+    return <Redirect to="/dashboard" />;
+  }
   return (
     <div className="font-sans antialiased bg-white">
       <Navbar />
