@@ -6,6 +6,7 @@ from flask_bcrypt import Bcrypt
 from flask_mail import Mail, Message
 import os
 import jwt
+import json
 import secrets
 from dotenv import load_dotenv
 import datetime
@@ -303,7 +304,12 @@ def dashboard():
         response = verify_authentication()
         if response[0] == "Verification successful.":
             user = User.query.filter_by(id=response[1]).first()
-            return jsonify({"message": "Verification successful.", "user": user.username})
+            podcasts = Podcast.query.filter_by(owner=user).all()
+            podcasts_json = []
+            for podcast in podcasts:
+                podcast_dict = {"podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
+                podcasts_json.append(podcast_dict)
+            return jsonify({"message": "Verification successful.", "user": user.username, "podcasts": podcasts_json})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
@@ -311,6 +317,86 @@ def dashboard():
         elif response == "Something went wrong":
             return jsonify({"message": "Something went wrong."})
 
+
+@app.route("/api/return-podcast/<podcast_id>", methods=['GET'])
+def return_podcast(podcast_id):
+    '''The code below will return a podcast to the frontend.'''
+    podcast = Podcast.query.filter_by(id=podcast_id).first()
+    if podcast:
+        return send_file(f'podcast_files/{podcast.podcast_file}')
+    else:
+        return jsonify({"message": "Podcast not found."})
+
+
+# Function for compressing and saving podcast file
+def save_and_compress_podcast_file(podcast_file):
+    '''
+    The code below will save the podcast file that is uploaded.
+
+    First a random hex token is generated for the new filename. Then 
+    Then, using os.path.splitext(), you can get the file extension of the file. 
+    The variable 'new_filename' will combine the random hex token which is the new filename
+    with the file extension. Next, the podcast file's path is declared and then the file is saved into 
+    that path.
+
+    Once that is complete, the file is then compressed and the filename is 
+    returned by this function.
+    '''
+
+    random_hex = secrets.token_hex(16)
+    file_ext = os.path.splitext(secure_filename(podcast_file.filename))[1]
+    new_filename = random_hex + file_ext
+    podcast_file_path = os.path.join(app.root_path, 'podcast_files', new_filename)
+    podcast_file.save(podcast_file_path)
+
+    return new_filename
+
+
+# Upload Podcast API route.
+@app.route("/api/upload-podcast", methods=['GET','POST'])
+def upload_podcast():
+    if request.method == 'GET':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            return jsonify({"message": "Verification successful."})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+    if request.method == 'POST':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            '''
+            The code below will first retrieve the current user by using their user ID that
+            is returned in the response variable. Once the current user has been found,
+            the podcast title is stored in the 'podcast_title' variable and the same thing
+            goes for the description and the podcast file. 
+
+            The podcast file is first passed as an argument to another function called
+            'save_and_compress_podcast_file()'. That function will not only save the file but
+            also compress it in order to save space. When it saves the file, the filename will
+            be a hex token. That filename will be returned by the function and then
+            the podcast will be created.
+            '''
+            current_user = User.query.filter_by(id=response[1]).first()
+            podcast_title = request.form['podcastTitle']
+            podcast_description = request.form['podcastDescription']
+            podcast_file = request.files['podcastFile']
+            podcast_filename = save_and_compress_podcast_file(podcast_file)
+            new_podcast = Podcast(owner=current_user, podcast_title=podcast_title, podcast_description=podcast_description, podcast_file=podcast_filename)
+            db.session.add(new_podcast)
+            db.session.commit()
+            print("Podcast has been uploaded.")
+            return jsonify({"message": "Verification successful.", "podcastUploaded": True})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
 
 # Account API route.
 @app.route("/api/account", methods=['GET', 'POST'])
