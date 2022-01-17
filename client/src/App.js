@@ -6,6 +6,7 @@ import Logout from "./pages/Logout";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
+import UploadPodcast from "./pages/UploadPodcast";
 import Account from "./pages/Account";
 import ChangePassword from "./pages/ChangePassword";
 import ProfilePicture from "./pages/ProfilePicture";
@@ -41,6 +42,10 @@ function App() {
 
         <Route exact path="/dashboard">
           <Dashboard />
+        </Route>
+
+        <Route exact path="/upload-podcast">
+          <UploadPodcast />
         </Route>
 
         <Route exact path="/account">
