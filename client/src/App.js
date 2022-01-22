@@ -7,9 +7,12 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import UploadPodcast from "./pages/UploadPodcast";
+import EditPodcast from "./pages/EditPodcast";
 import Account from "./pages/Account";
 import ChangePassword from "./pages/ChangePassword";
 import ProfilePicture from "./pages/ProfilePicture";
+import Forbidden from "./pages/403";
+import NotFound from "./pages/404";
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 
 function App() {
@@ -48,6 +51,10 @@ function App() {
           <UploadPodcast />
         </Route>
 
+        <Route exact path="/edit-podcast/:podcastId">
+          <EditPodcast />
+        </Route>
+
         <Route exact path="/account">
           <Account />
         </Route>
@@ -59,6 +66,12 @@ function App() {
         <Route exact path="/update-profile-picture">
           <ProfilePicture />
         </Route>
+
+        <Route exact path="/403-forbidden">
+          <Forbidden />
+        </Route>
+
+        <Route component={NotFound} />
       </Switch>
     </Router>
   );
