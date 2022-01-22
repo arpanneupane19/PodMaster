@@ -303,13 +303,13 @@ def dashboard():
     if request.method == 'GET':
         response = verify_authentication()
         if response[0] == "Verification successful.":
-            user = User.query.filter_by(id=response[1]).first()
-            podcasts = Podcast.query.filter_by(owner=user).all()
+            current_user = User.query.filter_by(id=response[1]).first()
+            podcasts = Podcast.query.filter_by(owner=current_user).all()
             podcasts_json = []
             for podcast in podcasts:
-                podcast_dict = {"podcast_owner": user.username,"podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
+                podcast_dict = {"podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
                 podcasts_json.append(podcast_dict)
-            return jsonify({"message": "Verification successful.", "user": user.username, "podcasts": podcasts_json})
+            return jsonify({"message": "Verification successful.", "currentUserUsername": current_user.username, "podcasts": podcasts_json})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
@@ -452,6 +452,64 @@ def edit_podcast(podcast_id):
                     return jsonify({"message": "Verification successful.", "podcastExists": True, "podcastOwnerValid": True, 'podcastUpdated': True})
                 else:
                     return jsonify({"message": "Verification successful.", "podcastExists": True, "podcastOwnerValid": False, 'podcastUpdated': False})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+
+# Podcast Listening API Route.
+@app.route("/api/listen", methods=['GET'])
+def listen():
+    '''
+    The code below will query all the podcasts on the PodMaster platform
+    and will send those podcasts to the frontend for them to be displayed on the 
+    Listen page.
+    '''
+    if request.method == 'GET':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            podcasts = Podcast.query.all()
+            podcasts_json = []
+            for podcast in podcasts:
+                podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
+                podcasts_json.append(podcast_dict)
+            return jsonify({"message": "Verification successful.", "podcasts": podcasts_json})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+
+# User Profile API Route.
+@app.route("/api/user/<username>", methods=['GET','POST'])
+def user(username):
+    if request.method == "GET":
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            '''
+            The code below will first query to see if the requested user
+            profile exists or not. If it does not, it will send a 
+            key called userValid with a value of False and the user will be redirected
+            to a 404 page. 
+            If the user does exist, then it will send the podcasts that that user has created
+            and also send information around that user such as the username, full name, followers, etc.
+            '''
+            user = User.query.filter_by(username=username).first()
+            if user == None:
+                return jsonify({"message": "Verification successful.", "userValid":False})
+            if user:
+                current_user = User.query.filter_by(id=response[1]).first()
+                podcasts = Podcast.query.filter_by(owner=user).all()
+                podcasts_json = []
+                for podcast in podcasts:
+                    podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
+                    podcasts_json.append(podcast_dict)
+                return jsonify({"message": "Verification successful.", "userValid": True, "currentUserUsername": current_user.username, "fullName": f'{user.first_name} {user.last_name}',"username": user.username, "followers": user.followee.count(), "following": user.follower.count(), "podcasts": podcasts_json})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
