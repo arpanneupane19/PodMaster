@@ -95,7 +95,7 @@ function Register() {
               placeholder="Username"
               name="username"
               id="username"
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setUsername(e.target.value.toLowerCase())}
               value={username}
               className="w-full p-4 border-b-2 focus:border-gray-100 outline-none tracking-wide mb-4"
               required
@@ -107,7 +107,7 @@ function Register() {
               placeholder="Email"
               name="email"
               id="email"
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value.toLowerCase())}
               value={email}
               className="w-full p-4 border-b-2 focus:border-gray-100 outline-none tracking-wide mb-4"
               required
