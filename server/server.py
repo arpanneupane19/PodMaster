@@ -68,7 +68,7 @@ class User(db.Model):
 
 # Podcast table schema
 class Podcast(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String, primary_key=True, default=secrets.token_hex(16))
     '''
     The 'owner_id' variable will be equal to the owner's id in the database.
     The 'podcast_title' is the title of the podcast and the 'podcast_description'
@@ -307,7 +307,7 @@ def dashboard():
             podcasts = Podcast.query.filter_by(owner=user).all()
             podcasts_json = []
             for podcast in podcasts:
-                podcast_dict = {"podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
+                podcast_dict = {"podcast_owner": user.username,"podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
                 podcasts_json.append(podcast_dict)
             return jsonify({"message": "Verification successful.", "user": user.username, "podcasts": podcasts_json})
         elif response == "This token has expired.":
@@ -391,6 +391,67 @@ def upload_podcast():
             db.session.commit()
             print("Podcast has been uploaded.")
             return jsonify({"message": "Verification successful.", "podcastUploaded": True})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+# Edit Podcast API Route.
+@app.route("/api/edit-podcast/<podcast_id>", methods=['GET','POST'])
+def edit_podcast(podcast_id):
+    if request.method == 'GET':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            current_user = User.query.filter_by(id=response[1]).first()
+            podcast = Podcast.query.filter_by(id=podcast_id).first()
+            '''
+            The code below will first check if the podcast exists. If it does not, then it will send a podcastExists key with a value of False.
+            If the podcast does exist, it will first check to see if the current user is the owner of the podcast
+            so that they can edit it. If they are, they're able to edit it, if not a podcastOwnerValid key with a value of False is sent
+            and the user is redirected to a 403 page.
+            '''
+            if podcast == None:
+                return jsonify({"message": "Verification successful.", "podcastExists": False})
+            if podcast:
+                if podcast.owner.id == current_user.id:
+                    return jsonify({"message": "Verification successful.", "podcastExists": True, "podcastOwnerValid": True, "podcastTitle": podcast.podcast_title, "podcastDescription": podcast.podcast_description})
+                else:
+                    return jsonify({"message": "Verification successful.", "podcastExists": True, "podcastOwnerValid": False})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+    if request.method == 'POST':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            current_user = User.query.filter_by(id=response[1]).first()
+            podcast = Podcast.query.filter_by(id=podcast_id).first()
+            '''
+            The code below will check to see if the podcast being updated actually exists or not.
+            If it does not, then a podcastExists key with a value of False will be sent to the frontend
+            and the user will be redirected to a 404 page.
+            If a podcast does exist, then the code will check if the podcast owner is the current user in 
+            order to update the podcast. If the current user is the podcast owner, then the podcast will be 
+            updated. Otherwise, a podcastOwnerValid key with a value of False will be sent to the frontend, and the
+            user will be redirected to a 403 page.
+            '''
+            if podcast == None:
+                return jsonify({"message": "Verification successful.", "podcastExists": False})
+            if podcast:
+                if podcast.owner.id == current_user.id:
+                    podcast_title = request.json['podcastTitle']
+                    podcast_description = request.json['podcastDescription']
+                    podcast.podcast_title = podcast_title
+                    podcast.podcast_description = podcast_description
+                    db.session.commit()
+                    return jsonify({"message": "Verification successful.", "podcastExists": True, "podcastOwnerValid": True, 'podcastUpdated': True})
+                else:
+                    return jsonify({"message": "Verification successful.", "podcastExists": True, "podcastOwnerValid": False, 'podcastUpdated': False})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
