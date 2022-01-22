@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Redirect } from "react-router-dom";
+import { Redirect, Link } from "react-router-dom";
 import { LoggedInNavbar } from "../components/Navbar";
 import axios from "axios";
 import {
@@ -59,7 +59,13 @@ function Dashboard() {
                           <h3 className="flex font-bold text-xl mb-2">
                             {podcast.podcast_title}
                           </h3>
-                          <AiOutlineEdit className="text-2xl cursor-pointer" />
+                          <Link
+                            to={{
+                              pathname: `/edit-podcast/${podcast.podcast_id}`,
+                            }}
+                          >
+                            <AiOutlineEdit className="text-2xl cursor-pointer" />
+                          </Link>
                         </div>
                         <div className="h-24 overflow-auto mb-2">
                           {podcast.podcast_description}
