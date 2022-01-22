@@ -8,6 +8,8 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import UploadPodcast from "./pages/UploadPodcast";
 import EditPodcast from "./pages/EditPodcast";
+import Listen from "./pages/Listen";
+import User from "./pages/User";
 import Account from "./pages/Account";
 import ChangePassword from "./pages/ChangePassword";
 import ProfilePicture from "./pages/ProfilePicture";
@@ -53,6 +55,14 @@ function App() {
 
         <Route exact path="/edit-podcast/:podcastId">
           <EditPodcast />
+        </Route>
+
+        <Route exact path="/listen">
+          <Listen />
+        </Route>
+
+        <Route exact path="/user/:username">
+          <User />
         </Route>
 
         <Route exact path="/account">
