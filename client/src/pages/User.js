@@ -17,6 +17,7 @@ function User() {
   const [userFollowing, setUserFollowing] = useState(null);
   const [userUsername, setUserUsername] = useState(null);
   const [userFullName, setUserFullName] = useState(null);
+  const [currentUserUsername, setCurrentUserUsername] = useState(null);
   const [imgUrl, setImgUrl] = useState(null);
   const [podcasts, setPodcasts] = useState([{}]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,7 @@ function User() {
             setUserFollowing(response.data.following);
             setPodcasts(response.data.podcasts);
             setImgUrl(`/api/profile-picture/${response.data.username}`);
+            setCurrentUserUsername(response.data.currentUserUsername);
           } else {
             setInvalidUser(true);
           }
@@ -145,14 +147,28 @@ function User() {
                         </div>
                         <div className="flex justify-between items-center">
                           <AiOutlineHeart className="text-2xl cursor-pointer" />
-                          <AiOutlineComment className="text-2xl cursor-pointer" />
+                          <Link
+                            to={{ pathname: `/comment/${podcast.podcast_id}` }}
+                          >
+                            <AiOutlineComment className="text-2xl cursor-pointer" />
+                          </Link>
                         </div>
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <p>{userFullName} has no podcasts at the moment.</p>
+                <p className="text-center">
+                  {currentUserUsername === userUsername ? (
+                    <p className="text-center">
+                      You don't have any podcasts at the moment.
+                    </p>
+                  ) : (
+                    <p className="text-center">
+                      {userFullName} doesn't have any podcasts at the moment.
+                    </p>
+                  )}
+                </p>
               )}
             </div>
           </div>
