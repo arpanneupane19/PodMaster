@@ -98,7 +98,13 @@ function Listen() {
                           </div>
                           <div className="flex justify-between items-center">
                             <AiOutlineHeart className="text-2xl cursor-pointer" />
-                            <AiOutlineComment className="text-2xl cursor-pointer" />
+                            <Link
+                              to={{
+                                pathname: `/comment/${podcast.podcast_id}`,
+                              }}
+                            >
+                              <AiOutlineComment className="text-2xl cursor-pointer" />
+                            </Link>
                           </div>
                         </div>
                       </div>
