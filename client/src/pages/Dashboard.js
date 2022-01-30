@@ -72,47 +72,49 @@ function Dashboard() {
                 </Link>
               </span>
             </div>
-            <div>
+            <div className="md:flex md:justify-center">
               {typeof podcasts !== "undefined" ? (
                 podcasts.length > 0 ? (
                   podcasts.map((podcast, index) => (
-                    <div className="md:flex md:justify-center">
-                      <div
-                        key={index}
-                        className="podcast md:w-1/2 md:my-4 md:ml-1 md:mr-1 w-full my-2 p-6 shadow-xl rounded-xl bg-red-500 text-white"
-                      >
-                        <div className="flex flex-col">
-                          <div className="flex justify-between">
-                            <h3 className="flex font-bold text-xl mb-2">
-                              {podcast.podcast_title}
-                            </h3>
-                            <Link
-                              to={{
-                                pathname: `/edit-podcast/${podcast.podcast_id}`,
-                              }}
-                            >
-                              <AiOutlineEdit className="text-2xl cursor-pointer" />
-                            </Link>
-                          </div>
-                          <div className="h-24 overflow-auto mb-2">
-                            {podcast.podcast_description}
-                          </div>
-                          <div className="flex justify-between items-center mb-2">
-                            {podcast.likes === 1 ? (
-                              <span>{podcast.likes} like</span>
-                            ) : (
-                              <span>{podcast.likes} likes</span>
-                            )}
-                            {podcast.comments === 1 ? (
-                              <span>{podcast.comments} comment</span>
-                            ) : (
-                              <span>{podcast.comments} comments</span>
-                            )}
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <AiOutlineHeart className="text-2xl cursor-pointer" />
+                    <div
+                      key={index}
+                      className="podcast md:w-1/2 md:my-4 md:ml-1 md:mr-1 w-full my-2 p-6 shadow-xl rounded-xl bg-red-500 text-white"
+                    >
+                      <div className="flex flex-col">
+                        <div className="flex justify-between">
+                          <h3 className="flex font-bold text-xl mb-2">
+                            {podcast.podcast_title}
+                          </h3>
+                          <Link
+                            to={{
+                              pathname: `/edit-podcast/${podcast.podcast_id}`,
+                            }}
+                          >
+                            <AiOutlineEdit className="text-2xl cursor-pointer" />
+                          </Link>
+                        </div>
+                        <div className="h-24 overflow-auto mb-2">
+                          {podcast.podcast_description}
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
+                          {podcast.likes === 1 ? (
+                            <span>{podcast.likes} like</span>
+                          ) : (
+                            <span>{podcast.likes} likes</span>
+                          )}
+                          {podcast.comments === 1 ? (
+                            <span>{podcast.comments} comment</span>
+                          ) : (
+                            <span>{podcast.comments} comments</span>
+                          )}
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <AiOutlineHeart className="text-2xl cursor-pointer" />
+                          <Link
+                            to={{ pathname: `/comment/${podcast.podcast_id}` }}
+                          >
                             <AiOutlineComment className="text-2xl cursor-pointer" />
-                          </div>
+                          </Link>
                         </div>
                       </div>
                     </div>
