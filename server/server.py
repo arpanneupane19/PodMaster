@@ -116,6 +116,7 @@ class Comment(db.Model):
     The 'podcast_id' will be equal to the podcast that was being commented on.
     This value will just be the id of that podcast.
     '''
+    comment = db.Column(db.String(150), nullable=False)
     commenter_id = db.Column(
         db.Integer, db.ForeignKey("user.id"), nullable=False)
     podcast_id = db.Column(db.Integer, db.ForeignKey(
@@ -460,6 +461,32 @@ def edit_podcast(podcast_id):
             return jsonify({"message": "Something went wrong."})
 
 
+# Comment on Podcast
+@app.route('/api/comment/<podcast_id>', methods=['GET','POST'])
+def comment(podcast_id):
+    '''
+    The code below is used to allow users to comment on specific podcasts.
+    '''
+    if request.method == 'GET':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            podcast = Podcast.query.filter_by(id=podcast_id).first()
+            '''
+            The code below will first check if the podcast exists. If it does not, then it will send a podcastExists key with a value of False.
+            If the podcast does exist, it will send a podcastExists key with a value of True along with some info regarding the podcast (title).
+            '''
+            if podcast == None:
+                return jsonify({"message":"Verification successful.", "podcastExists":False})
+            if podcast:
+                return jsonify({"message":"Verification successful.", "podcastExists":True, "podcastTitle": podcast.podcast_title,"podcastOwnerUsername":podcast.owner.username})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+            
 # Podcast Listening API Route.
 @app.route("/api/listen", methods=['GET'])
 def listen():
