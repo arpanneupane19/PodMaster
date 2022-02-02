@@ -11,6 +11,7 @@ function Comment() {
   const [podcastTitle, setPodcastTitle] = useState("");
   const [podcastOwnerUsername, setPodcastOwnerUsername] = useState("");
   const [comment, setComment] = useState("");
+  const [commented, setCommented] = useState(false);
 
   const { podcastId } = useParams();
 
@@ -41,6 +42,45 @@ function Comment() {
 
   if (!localStorage.getItem("token") || !loggedIn) {
     return <Redirect to="/login" />;
+  }
+
+  const uploadComment = (event) => {
+    event.preventDefault();
+
+    const data = {
+      comment: comment.trim(),
+    };
+
+    axios
+      .post(`/api/comment/${podcastId}`, data, {
+        headers: {
+          "x-access-token": localStorage.getItem("token"),
+        },
+      })
+      .then((response) => {
+        if (response.data.message !== "Verification successful.") {
+          setLoggedIn(false);
+          localStorage.removeItem("token");
+        }
+
+        if (response.data.message === "Verification successful.") {
+          if (response.data.podcastExists) {
+            if (response.data.commentAdded) {
+              setCommented(true);
+            }
+          } else {
+            setNotFound(true);
+          }
+        }
+      });
+  };
+
+  if (commented) {
+    return <Redirect to="/dashboard" />;
+  }
+
+  if (notFound) {
+    return <Redirect to="/podcast-not-found" />;
   }
 
   if (loading) {
@@ -76,7 +116,7 @@ function Comment() {
                 </Link>
               </span>
             </div>
-            <form>
+            <form onSubmit={uploadComment}>
               <textarea
                 style={{ minHeight: "5em", maxHeight: "12em" }}
                 minLength={4}
