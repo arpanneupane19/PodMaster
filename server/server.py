@@ -88,7 +88,7 @@ class Podcast(db.Model):
     Each comment will have a podcast that the comment was posted on and a user
     which is the user that created the comment on that specific podcast.
     '''
-    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    owner_id = db.Column(db.String, db.ForeignKey("user.id"), nullable=False)
     podcast_title = db.Column(db.String(50), nullable=False)
     podcast_description = db.Column(db.String(500), nullable=False)
     podcast_file = db.Column(db.String(30), unique=True, nullable=False)
@@ -102,7 +102,7 @@ class Podcast(db.Model):
 class Like(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     '''The 'podcast_id' variable will be equal to the podcast's id which was liked.'''
-    podcast_id = db.Column(db.Integer, db.ForeignKey(
+    podcast_id = db.Column(db.String, db.ForeignKey(
         "podcast.id"), nullable=False)
 
 
@@ -118,8 +118,8 @@ class Comment(db.Model):
     '''
     comment = db.Column(db.String(150), nullable=False)
     commenter_id = db.Column(
-        db.Integer, db.ForeignKey("user.id"), nullable=False)
-    podcast_id = db.Column(db.Integer, db.ForeignKey(
+        db.String, db.ForeignKey("user.id"), nullable=False)
+    podcast_id = db.Column(db.String, db.ForeignKey(
         "podcast.id"), nullable=False)
 
 
@@ -136,8 +136,8 @@ class Follow(db.Model):
     For example, if user_1 follows user_2, user_1 is the follower, and user_2
     is the followee.
     '''
-    follower_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    followee_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    follower_id = db.Column(db.String, db.ForeignKey("user.id"))
+    followee_id = db.Column(db.String, db.ForeignKey("user.id"))
 
 
 # API route for creating new users.
@@ -486,6 +486,29 @@ def comment(podcast_id):
         elif response == "Something went wrong":
             return jsonify({"message": "Something went wrong."})
 
+    if request.method == 'POST':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            current_user = User.query.filter_by(id=response[1]).first()
+            podcast = Podcast.query.filter_by(id=podcast_id).first()
+            '''
+            The code below will first check to see if the podcast exists. If it does not exist, 
+            then an error message is sent. If it does exist, then the code will add the comment to the database.
+            '''
+            if podcast == None:
+                return jsonify({"message":"Verification successful.", "podcastExists":False})
+            if podcast:
+                comment = request.json['comment']
+                new_comment = Comment(comment=comment, podcast=podcast, commenter=current_user)
+                db.session.add(new_comment)
+                db.session.commit()
+                return jsonify({"message":"Verification successful.", "podcastExists":True, "commentAdded":True})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
             
 # Podcast Listening API Route.
 @app.route("/api/listen", methods=['GET'])
