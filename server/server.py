@@ -308,7 +308,8 @@ def dashboard():
             podcasts = Podcast.query.filter_by(owner=current_user).all()
             podcasts_json = []
             for podcast in podcasts:
-                podcast_dict = {"podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
+                podcast_dict = {"podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description,
+                                "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
                 podcasts_json.append(podcast_dict)
             return jsonify({"message": "Verification successful.", "currentUserUsername": current_user.username, "podcasts": podcasts_json})
         elif response == "This token has expired.":
@@ -347,14 +348,15 @@ def save_and_compress_podcast_file(podcast_file):
     random_hex = secrets.token_hex(16)
     file_ext = os.path.splitext(secure_filename(podcast_file.filename))[1]
     new_filename = random_hex + file_ext
-    podcast_file_path = os.path.join(app.root_path, 'podcast_files', new_filename)
+    podcast_file_path = os.path.join(
+        app.root_path, 'podcast_files', new_filename)
     podcast_file.save(podcast_file_path)
 
     return new_filename
 
 
 # Upload Podcast API route.
-@app.route("/api/upload-podcast", methods=['GET','POST'])
+@app.route("/api/upload-podcast", methods=['GET', 'POST'])
 def upload_podcast():
     if request.method == 'GET':
         response = verify_authentication()
@@ -387,7 +389,8 @@ def upload_podcast():
             podcast_description = request.form['podcastDescription']
             podcast_file = request.files['podcastFile']
             podcast_filename = save_and_compress_podcast_file(podcast_file)
-            new_podcast = Podcast(owner=current_user, podcast_title=podcast_title, podcast_description=podcast_description, podcast_file=podcast_filename)
+            new_podcast = Podcast(owner=current_user, podcast_title=podcast_title,
+                                  podcast_description=podcast_description, podcast_file=podcast_filename)
             db.session.add(new_podcast)
             db.session.commit()
             print("Podcast has been uploaded.")
@@ -399,8 +402,9 @@ def upload_podcast():
         elif response == "Something went wrong":
             return jsonify({"message": "Something went wrong."})
 
+
 # Edit Podcast API Route.
-@app.route("/api/edit-podcast/<podcast_id>", methods=['GET','POST'])
+@app.route("/api/edit-podcast/<podcast_id>", methods=['GET', 'POST'])
 def edit_podcast(podcast_id):
     if request.method == 'GET':
         response = verify_authentication()
@@ -461,8 +465,41 @@ def edit_podcast(podcast_id):
             return jsonify({"message": "Something went wrong."})
 
 
-# Comment on Podcast
-@app.route('/api/comment/<podcast_id>', methods=['GET','POST'])
+# Delete Podcast API Route.
+@app.route("/api/delete-podcast/<podcast_id>", methods=['POST'])
+def delete_podcast(podcast_id):
+    '''
+    The code below is used to handle deleting podcasts.
+    '''
+    if request.method == 'POST':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            current_user = User.query.filter_by(id=response[1]).first()
+            podcast = Podcast.query.filter_by(id=podcast_id).first()
+            '''
+            The podcast will first check if the podcast exists. If it does not, then it will send a
+            podcastExists key with a value of False. If the podcast does exist, it will first check to see podcast
+            owner is the current user in order to delete the podcast. If the current user is the podcast owner, the
+            podcast will be deleted. Otherwise, a podcastOwnerValid key with a value of False will be sent to the frontend.
+            '''
+            if podcast == None:
+                return jsonify({"message": "Verification successful.", "podcastExists": False})
+            if podcast:
+                if podcast.owner.id == current_user.id:
+                    if os.path.exists(f'podcast_files/{podcast.podcast_file}'):
+                        os.remove(f'podcast_files/{podcast.podcast_file}')
+                        for like in podcast.likes:
+                            db.session.delete(like)
+                        for comment in podcast.comments:
+                            db.session.delete(comment)
+                        db.session.delete(podcast)
+                        db.session.commit()
+                        print("The podcast, likes, and comments have been deleted.")
+                        return jsonify({"message": "Verification successful.", "podcastExists": True, "podcastOwnerValid": True, 'podcastDeleted': True})
+
+
+# Comment on Podcast API Route.
+@app.route('/api/comment/<podcast_id>', methods=['GET', 'POST'])
 def comment(podcast_id):
     '''
     The code below is used to allow users to comment on specific podcasts.
@@ -476,9 +513,9 @@ def comment(podcast_id):
             If the podcast does exist, it will send a podcastExists key with a value of True along with some info regarding the podcast (title).
             '''
             if podcast == None:
-                return jsonify({"message":"Verification successful.", "podcastExists":False})
+                return jsonify({"message": "Verification successful.", "podcastExists": False})
             if podcast:
-                return jsonify({"message":"Verification successful.", "podcastExists":True, "podcastTitle": podcast.podcast_title,"podcastOwnerUsername":podcast.owner.username})
+                return jsonify({"message": "Verification successful.", "podcastExists": True, "podcastTitle": podcast.podcast_title, "podcastOwnerUsername": podcast.owner.username})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
@@ -496,20 +533,22 @@ def comment(podcast_id):
             then an error message is sent. If it does exist, then the code will add the comment to the database.
             '''
             if podcast == None:
-                return jsonify({"message":"Verification successful.", "podcastExists":False})
+                return jsonify({"message": "Verification successful.", "podcastExists": False})
             if podcast:
                 comment = request.json['comment']
-                new_comment = Comment(comment=comment, podcast=podcast, commenter=current_user)
+                new_comment = Comment(
+                    comment=comment, podcast=podcast, commenter=current_user)
                 db.session.add(new_comment)
                 db.session.commit()
-                return jsonify({"message":"Verification successful.", "podcastExists":True, "commentAdded":True})
+                return jsonify({"message": "Verification successful.", "podcastExists": True, "commentAdded": True})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
             return jsonify({"message": "Decoding error."})
         elif response == "Something went wrong":
             return jsonify({"message": "Something went wrong."})
-            
+
+
 # Podcast Listening API Route.
 @app.route("/api/listen", methods=['GET'])
 def listen():
@@ -524,7 +563,8 @@ def listen():
             podcasts = Podcast.query.all()
             podcasts_json = []
             for podcast in podcasts:
-                podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
+                podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description":
+                                podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
                 podcasts_json.append(podcast_dict)
             return jsonify({"message": "Verification successful.", "podcasts": podcasts_json})
         elif response == "This token has expired.":
@@ -536,7 +576,7 @@ def listen():
 
 
 # User Profile API Route.
-@app.route("/api/user/<username>", methods=['GET','POST'])
+@app.route("/api/user/<username>", methods=['GET', 'POST'])
 def user(username):
     if request.method == "GET":
         response = verify_authentication()
@@ -551,21 +591,23 @@ def user(username):
             '''
             user = User.query.filter_by(username=username).first()
             if user == None:
-                return jsonify({"message": "Verification successful.", "userValid":False})
+                return jsonify({"message": "Verification successful.", "userValid": False})
             if user:
                 current_user = User.query.filter_by(id=response[1]).first()
                 podcasts = Podcast.query.filter_by(owner=user).all()
                 podcasts_json = []
                 for podcast in podcasts:
-                    podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
+                    podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description":
+                                    podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
                     podcasts_json.append(podcast_dict)
-                return jsonify({"message": "Verification successful.", "userValid": True, "currentUserUsername": current_user.username, "fullName": f'{user.first_name} {user.last_name}',"username": user.username, "followers": user.followee.count(), "following": user.follower.count(), "podcasts": podcasts_json})
+                return jsonify({"message": "Verification successful.", "userValid": True, "currentUserUsername": current_user.username, "fullName": f'{user.first_name} {user.last_name}', "username": user.username, "followers": user.followee.count(), "following": user.follower.count(), "podcasts": podcasts_json})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
             return jsonify({"message": "Decoding error."})
         elif response == "Something went wrong":
             return jsonify({"message": "Something went wrong."})
+
 
 # Account API route.
 @app.route("/api/account", methods=['GET', 'POST'])
