@@ -2,12 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Redirect, Link } from "react-router-dom";
 import { LoggedInNavbar } from "../components/Navbar";
 import axios from "axios";
-import {
-  AiOutlineHeart,
-  AiFillHeart,
-  AiOutlineComment,
-  AiOutlineEdit,
-} from "react-icons/ai";
+import { AiOutlineHeart, AiFillHeart, AiOutlineComment } from "react-icons/ai";
+import { FiEdit3, FiTrash2 } from "react-icons/fi";
 import ClipLoader from "react-spinners/ClipLoader";
 
 function Dashboard() {
@@ -15,6 +11,9 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [podcasts, setPodcasts] = useState([{}]);
   const [currentUserUsername, setCurrentUserUsername] = useState("");
+  const [notFound, setNotFound] = useState(false);
+  const [forbidden, setForbidden] = useState(false);
+  const [deleted, setDeleted] = useState(false);
 
   useEffect(() => {
     axios
@@ -35,10 +34,49 @@ function Dashboard() {
         }
       });
     setLoading(false);
-  }, []);
+  }, [deleted]);
 
   if (!localStorage.getItem("token") || !loggedIn) {
     return <Redirect to="/login" />;
+  }
+
+  const deletePodcast = (id) => {
+    axios
+      .post(
+        `/api/delete-podcast/${id}`,
+        { id },
+        {
+          headers: {
+            "x-access-token": localStorage.getItem("token"),
+          },
+        }
+      )
+      .then((response) => {
+        if (response.data.message !== "Verification successful.") {
+          setLoggedIn(false);
+          localStorage.removeItem("token");
+        }
+        if (response.data.message === "Verification successful.") {
+          if (response.data.podcastExists) {
+            if (response.data.podcastOwnerValid) {
+              if (response.data.podcastDeleted) {
+                setDeleted(true);
+              }
+            } else {
+              setForbidden(true);
+            }
+          }
+        } else {
+          setNotFound(true);
+        }
+      });
+  };
+
+  if (forbidden) {
+    return <Redirect to="/403-forbidden" />;
+  }
+  if (notFound) {
+    return <Redirect to="/podcast-not-found" />;
   }
 
   if (loading) {
@@ -85,13 +123,19 @@ function Dashboard() {
                           <h3 className="flex font-bold text-xl mb-2">
                             {podcast.podcast_title}
                           </h3>
-                          <Link
-                            to={{
-                              pathname: `/edit-podcast/${podcast.podcast_id}`,
-                            }}
-                          >
-                            <AiOutlineEdit className="text-2xl cursor-pointer" />
-                          </Link>
+                          <div className="flex flex-row">
+                            <Link
+                              to={{
+                                pathname: `/edit-podcast/${podcast.podcast_id}`,
+                              }}
+                            >
+                              <FiEdit3 className="text-xl cursor-pointer mr-2" />
+                            </Link>
+                            <FiTrash2
+                              onClick={() => deletePodcast(podcast.podcast_id)}
+                              className="text-xl cursor-pointer ml-2"
+                            />
+                          </div>
                         </div>
                         <div className="h-24 overflow-auto mb-2">
                           {podcast.podcast_description}
