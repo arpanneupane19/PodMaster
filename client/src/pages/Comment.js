@@ -76,7 +76,7 @@ function Comment() {
   };
 
   if (commented) {
-    return <Redirect to="/dashboard" />;
+    return <Redirect to={`/comments/${podcastId}`} />;
   }
 
   if (notFound) {
@@ -107,7 +107,7 @@ function Comment() {
                 Commenting on {podcastTitle}
               </h1>
               <span>
-                Uploaded by{" "}
+                Podcast by{" "}
                 <Link
                   className="text-blue-500"
                   to={{ pathname: `/user/${podcastOwnerUsername}` }}
