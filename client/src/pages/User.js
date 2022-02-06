@@ -192,9 +192,9 @@ function User() {
             </div>
             {/* User Podcasts */}
             <div>
-              {podcasts.length > 0 ? (
-                podcasts.map((podcast, index) => (
-                  <div className="md:flex md:justify-center">
+              <div className="md:flex md:justify-center">
+                {podcasts.length > 0 ? (
+                  podcasts.map((podcast, index) => (
                     <div
                       key={index}
                       className="podcast md:w-1/2 md:my-4 md:ml-1 md:mr-1 w-full my-2 p-6 shadow-xl rounded-xl bg-red-500 text-white"
@@ -226,9 +226,21 @@ function User() {
                             <span>{podcast.likes} likes</span>
                           )}
                           {podcast.comments === 1 ? (
-                            <span>{podcast.comments} comment</span>
+                            <Link
+                              to={{
+                                pathname: `/comments/${podcast.podcast_id}`,
+                              }}
+                            >
+                              {podcast.comments} comment
+                            </Link>
                           ) : (
-                            <span>{podcast.comments} comments</span>
+                            <Link
+                              to={{
+                                pathname: `/comments/${podcast.podcast_id}`,
+                              }}
+                            >
+                              {podcast.comments} comments
+                            </Link>
                           )}
                         </div>
                         <div className="flex justify-between items-center">
@@ -241,21 +253,21 @@ function User() {
                         </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center">
+                    {currentUserUsername === userUsername ? (
+                      <p className="text-center">
+                        You don't have any podcasts at the moment.
+                      </p>
+                    ) : (
+                      <p className="text-center">
+                        {userFullName} doesn't have any podcasts at the moment.
+                      </p>
+                    )}
                   </div>
-                ))
-              ) : (
-                <p className="text-center">
-                  {currentUserUsername === userUsername ? (
-                    <p className="text-center">
-                      You don't have any podcasts at the moment.
-                    </p>
-                  ) : (
-                    <p className="text-center">
-                      {userFullName} doesn't have any podcasts at the moment.
-                    </p>
-                  )}
-                </p>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
