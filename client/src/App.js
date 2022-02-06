@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import UploadPodcast from "./pages/UploadPodcast";
 import EditPodcast from "./pages/EditPodcast";
 import Comment from "./pages/Comment";
+import Comments from "./pages/Comments";
 import Listen from "./pages/Listen";
 import User from "./pages/User";
 import Account from "./pages/Account";
@@ -60,6 +61,10 @@ function App() {
 
         <Route exact path="/comment/:podcastId">
           <Comment />
+        </Route>
+
+        <Route exact path="/comments/:podcastId">
+          <Comments />
         </Route>
 
         <Route exact path="/listen">
