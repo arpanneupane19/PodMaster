@@ -147,9 +147,21 @@ function Dashboard() {
                             <span>{podcast.likes} likes</span>
                           )}
                           {podcast.comments === 1 ? (
-                            <span>{podcast.comments} comment</span>
+                            <Link
+                              to={{
+                                pathname: `/comments/${podcast.podcast_id}`,
+                              }}
+                            >
+                              {podcast.comments} comment
+                            </Link>
                           ) : (
-                            <span>{podcast.comments} comments</span>
+                            <Link
+                              to={{
+                                pathname: `/comments/${podcast.podcast_id}`,
+                              }}
+                            >
+                              {podcast.comments} comments
+                            </Link>
                           )}
                         </div>
                         <div className="flex justify-between items-center">
