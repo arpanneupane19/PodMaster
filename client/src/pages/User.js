@@ -21,6 +21,9 @@ function User() {
   const [imgUrl, setImgUrl] = useState(null);
   const [podcasts, setPodcasts] = useState([{}]);
   const [loading, setLoading] = useState(true);
+  const [following, setFollowing] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const [forbidden, setForbidden] = useState(false);
 
   const { username } = useParams();
 
@@ -46,6 +49,11 @@ function User() {
             setPodcasts(response.data.podcasts);
             setImgUrl(`/api/profile-picture/${response.data.username}`);
             setCurrentUserUsername(response.data.currentUserUsername);
+            if (response.data.currentUserFollowingUser) {
+              setFollowing(true);
+            } else {
+              setFollowing(false);
+            }
           } else {
             setInvalidUser(true);
           }
@@ -60,6 +68,57 @@ function User() {
 
   if (invalidUser) {
     return <Redirect to="/user-does-not-exist" />;
+  }
+
+  const followAndUnfollow = (action) => {
+    axios
+      .post(
+        `/api/${action}`,
+        {
+          userUsername,
+        },
+        {
+          headers: {
+            "x-access-token": localStorage.getItem("token"),
+          },
+        }
+      )
+      .then((response) => {
+        if (response.data.message !== "Verification successful.") {
+          setLoggedIn(false);
+          localStorage.removeItem("token");
+        }
+
+        if (response.data.message === "Verification successful.") {
+          if (response.data.userValid) {
+            if (response.data.following) {
+              setFollowing(true);
+              setUserFollowers(userFollowers + 1);
+            } else {
+              setFollowing(false);
+              setUserFollowers(userFollowers - 1);
+            }
+            if (response.data.error === "You cannot follow yourself.") {
+              setForbidden(true);
+            } else if (
+              response.data.error === "Invalid action." ||
+              response.data.error === "Cannot do that."
+            ) {
+              setNotFound(true);
+            }
+          } else {
+            setNotFound(true);
+          }
+        }
+      });
+  };
+
+  if (notFound) {
+    return <Redirect to="/user-does-not-exist" />;
+  }
+
+  if (forbidden) {
+    return <Redirect to="/403-forbidden" />;
   }
 
   if (loading) {
@@ -92,15 +151,42 @@ function User() {
                     width="75"
                   />
                 </div>
-                <div className="text-center">
+                <div className="text-center flex flex-col">
                   <p className="md:text-xl text-lg font-light">
                     {userFullName}
                   </p>
-                  <span>@{userUsername}</span>
+                  <span className="mb-2">@{userUsername}</span>
+                  {currentUserUsername === userUsername ? (
+                    <></>
+                  ) : following ? (
+                    <div
+                      onClick={() => followAndUnfollow("unfollow")}
+                      className="cursor-pointer text-red-500 bg-white border-2 border-red-500 p-1 rounded-xl"
+                    >
+                      Unfollow
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => followAndUnfollow("follow")}
+                      className="cursor-pointer text-white border-2 border-white p-1 rounded-xl"
+                    >
+                      Follow
+                    </div>
+                  )}
                 </div>
                 <div className="text-center">
-                  <p className="font-light">{userFollowers} followers</p>
-                  <p className="font-light">{userFollowing} following</p>
+                  {userFollowers === 1 ? (
+                    <p className="font-light text-right">
+                      {userFollowers} follower
+                    </p>
+                  ) : (
+                    <p className="font-light text-right">
+                      {userFollowers} followers
+                    </p>
+                  )}
+                  <p className="font-light text-right">
+                    {userFollowing} following
+                  </p>
                 </div>
               </div>
             </div>
