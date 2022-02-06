@@ -560,6 +560,44 @@ def comment(podcast_id):
             return jsonify({"message": "Something went wrong."})
 
 
+# View comments of a Podcast API Route.
+@app.route('/api/comments/<podcast_id>', methods=['GET'])
+def comments(podcast_id):
+    '''
+    The code below is responsible for displaying the comments of a 
+    specific podcast.
+    '''
+    if request.method == 'GET':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            podcast = Podcast.query.filter_by(id=podcast_id).first()
+            '''
+            The code below will first check to see if the podcast exists. If it does not, then it will send a podcastExists key with a value of False.
+            If the podcast does exist, it will send a podcastExists key with a value of True along with some info regarding the podcast as well as the comments.
+            '''
+            if podcast == None:
+                return jsonify({"message": "Verification successful.", "podcastExists": False})
+            if podcast:
+                '''
+                First, get all the comments. Then, loop through the comments and get the commenter's username.
+                Then, create a dictionary with the comment and commenter's username. Next, append the dictionary to 
+                the comments_json list. Finally, return that list to the frontend.
+                '''
+                comments = Comment.query.filter_by(podcast=podcast).all()
+                comments_json = []
+                for comment in comments:
+                    comment_dict = {"comment": comment.comment,
+                                    "commenter": comment.commenter.username}
+                    comments_json.append(comment_dict)
+                return jsonify({"message": "Verification successful.", "podcastExists": True, "comments": comments_json, "podcastTitle": podcast.podcast_title, "podcastOwnerUsername": podcast.owner.username})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+
 # Podcast Listening API Route.
 @app.route("/api/listen", methods=['GET'])
 def listen():
