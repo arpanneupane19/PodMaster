@@ -56,10 +56,10 @@ function Listen() {
               <h1 className="text-2xl mb-2 tracking-widest">Listen.</h1>
             </div>
             <div>
-              {typeof podcasts !== "undefined" ? (
-                podcasts.length > 0 ? (
-                  podcasts.map((podcast, index) => (
-                    <div className="md:flex md:justify-center">
+              <div className="md:flex md:justify-center">
+                {typeof podcasts !== "undefined" ? (
+                  podcasts.length > 0 ? (
+                    podcasts.map((podcast, index) => (
                       <div
                         key={index}
                         className="podcast md:w-1/2 md:my-4 md:ml-1 md:mr-1 w-full my-2 p-6 shadow-xl rounded-xl bg-red-500 text-white"
@@ -91,9 +91,21 @@ function Listen() {
                               <span>{podcast.likes} likes</span>
                             )}
                             {podcast.comments === 1 ? (
-                              <span>{podcast.comments} comment</span>
+                              <Link
+                                to={{
+                                  pathname: `/comments/${podcast.podcast_id}`,
+                                }}
+                              >
+                                {podcast.comments} comment
+                              </Link>
                             ) : (
-                              <span>{podcast.comments} comments</span>
+                              <Link
+                                to={{
+                                  pathname: `/comments/${podcast.podcast_id}`,
+                                }}
+                              >
+                                {podcast.comments} comments
+                              </Link>
                             )}
                           </div>
                           <div className="flex justify-between items-center">
@@ -108,14 +120,14 @@ function Listen() {
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))
+                  ) : (
+                    <p>No podcasts yet. Be the first to upload!</p>
+                  )
                 ) : (
-                  <p>No podcasts yet. Be the first to upload!</p>
-                )
-              ) : (
-                <p>Loading...</p>
-              )}
+                  <p>Loading...</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
