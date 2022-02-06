@@ -65,6 +65,17 @@ class User(db.Model):
     followee = db.relationship(
         "Follow", backref='followee', foreign_keys="Follow.followee_id", lazy='dynamic')
 
+    def is_following_user(self, user):
+        '''
+        This method will either return True or False. A user object is passed in as an argument
+        and this method will check to see if the current user is following the user that was passed
+        in as an argument. If they are following them, then True will be returned, otherwise False will
+        be returned.
+        '''
+        is_following = Follow.query.filter_by(
+            follower=self, followee=user).count() > 0
+        return is_following
+
 
 # Podcast table schema
 class Podcast(db.Model):
@@ -596,11 +607,59 @@ def user(username):
                 current_user = User.query.filter_by(id=response[1]).first()
                 podcasts = Podcast.query.filter_by(owner=user).all()
                 podcasts_json = []
+                is_following = current_user.is_following_user(user)
                 for podcast in podcasts:
                     podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description":
                                     podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
                     podcasts_json.append(podcast_dict)
-                return jsonify({"message": "Verification successful.", "userValid": True, "currentUserUsername": current_user.username, "fullName": f'{user.first_name} {user.last_name}', "username": user.username, "followers": user.followee.count(), "following": user.follower.count(), "podcasts": podcasts_json})
+                return jsonify({"message": "Verification successful.", "userValid": True, "currentUserUsername": current_user.username, "fullName": f'{user.first_name} {user.last_name}', "username": user.username, "followers": user.followee.count(), "following": user.follower.count(), "currentUserFollowingUser": is_following, "podcasts": podcasts_json})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+
+# Follow/Unfollow API Route.
+@app.route("/api/<action>", methods=['POST'])
+def follow_unfollow(action):
+    if request.method == 'POST':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            '''
+            The code below will handle following and unfollowing users.
+            It will first query the user that was given from the request and
+            the current user. Once it has done that, it will check to see if the current
+            user is following the user. If they're following the user and the action is to unfollow,
+            the user and the action is to follow, then it will add the user to the current user's following list.
+            If it's not a valid action, it will return an error.
+            '''
+            user_username = request.json['userUsername']
+            current_user = User.query.filter_by(id=response[1]).first()
+            if current_user:
+                user = User.query.filter_by(username=user_username).first()
+                if user:
+                    if user.id == current_user.id:
+                        return jsonify({"message": "Verification successful.", "userValid": True, "error": "You cannot follow yourself."})
+                    if current_user.is_following_user(user) and action == "unfollow":
+                        follow_object = Follow.query.filter_by(
+                            follower=current_user, followee=user).first()
+                        db.session.delete(follow_object)
+                        db.session.commit()
+                        return jsonify({'message': 'Verification successful.', "userValid": True, 'following': False})
+                    elif not current_user.is_following_user(user) and action == "follow":
+                        new_follow = Follow(
+                            follower=current_user, followee=user)
+                        db.session.add(new_follow)
+                        db.session.commit()
+                        return jsonify({'message': 'Verification successful.', "userValid": True, 'following': True})
+                    elif (current_user.is_following_user(user) and action == "follow") or (not current_user.is_following_user(user) and action == "follow"):
+                        return jsonify({"message": "Verification successful.", "userValid": True, "error": "Cannot do that."})
+                    elif action != "follow" or action != "unfollow":
+                        return jsonify({"message": "Verification successful.", "userValid": True, "error": "Invalid action."})
+                else:
+                    return jsonify({"message": "Verification successful.", "userValid": False})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
