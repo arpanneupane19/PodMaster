@@ -11,6 +11,7 @@ import secrets
 from dotenv import load_dotenv
 import datetime
 from PIL import Image
+from uuid import uuid4
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -32,7 +33,7 @@ mail = Mail(app)
 
 # User table schema
 class User(db.Model):
-    id = db.Column(db.String, primary_key=True, default=secrets.token_hex(16))
+    id = db.Column(db.String, primary_key=True, default=uuid4().hex)
     first_name = db.Column(db.String(), nullable=False)
     last_name = db.Column(db.String(), nullable=False)
     username = db.Column(db.String(15), unique=True, nullable=False)
@@ -79,7 +80,7 @@ class User(db.Model):
 
 # Podcast table schema
 class Podcast(db.Model):
-    id = db.Column(db.String, primary_key=True, default=secrets.token_hex(16))
+    id = db.Column(db.String, primary_key=True, default=uuid4().hex)
     '''
     The 'owner_id' variable will be equal to the owner's id in the database.
     The 'podcast_title' is the title of the podcast and the 'podcast_description'
@@ -119,7 +120,7 @@ class Like(db.Model):
 
 # Comment table schema
 class Comment(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String, primary_key=True, default=uuid4().hex)
     '''
     The 'commenter_id' will be equal to the commenter's id in the database.
     It can be also known as the user that created the comment on the podcast.
@@ -560,6 +561,35 @@ def comment(podcast_id):
             return jsonify({"message": "Something went wrong."})
 
 
+# Delete Comment API Route.
+@app.route('/api/delete-comment/<comment_id>', methods=['POST'])
+def delete_comment(comment_id):
+    if request.method == "POST":
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            current_user = User.query.filter_by(id=response[1]).first()
+            comment = Comment.query.filter_by(id=comment_id).first()
+            '''
+            The code below will first check to see if the comment exists. If it does not exist,
+            then an error message is sent. If it does exist, then the code will delete the comment.
+            '''
+            if comment == None:
+                return jsonify({"message": "Verification successful.", "commentExists": False})
+            if comment:
+                if comment.commenter.id == current_user.id:
+                    db.session.delete(comment)
+                    db.session.commit()
+                    return jsonify({"message": "Verification successful.", "commentExists": True, "commentDeleted": True, "commentOwnerValid": True})
+                if comment.commenter.id != current_user.id:
+                    return jsonify({"message": "Verification successful.", "commentExists": True, "commentDeleted": False, "commentOwnerValid": False})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+
 # View comments of a Podcast API Route.
 @app.route('/api/comments/<podcast_id>', methods=['GET'])
 def comments(podcast_id):
@@ -570,6 +600,7 @@ def comments(podcast_id):
     if request.method == 'GET':
         response = verify_authentication()
         if response[0] == "Verification successful.":
+            current_user = User.query.filter_by(id=response[1]).first()
             podcast = Podcast.query.filter_by(id=podcast_id).first()
             '''
             The code below will first check to see if the podcast exists. If it does not, then it will send a podcastExists key with a value of False.
@@ -587,9 +618,9 @@ def comments(podcast_id):
                 comments_json = []
                 for comment in comments:
                     comment_dict = {"comment": comment.comment,
-                                    "commenter": comment.commenter.username}
+                                    "commenter": comment.commenter.username, "commentId": comment.id}
                     comments_json.append(comment_dict)
-                return jsonify({"message": "Verification successful.", "podcastExists": True, "comments": comments_json, "podcastTitle": podcast.podcast_title, "podcastOwnerUsername": podcast.owner.username})
+                return jsonify({"message": "Verification successful.", "podcastExists": True, "comments": comments_json, "podcastTitle": podcast.podcast_title, "podcastOwnerUsername": podcast.owner.username, "currentUserUsername": current_user.username})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
