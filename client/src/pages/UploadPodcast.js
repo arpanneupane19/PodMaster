@@ -120,7 +120,7 @@ function UploadPodcast() {
                 name="podcastAudioFile"
                 onChange={(e) => setPodcastFile(e.target.files[0])}
                 className="w-full p-4 border border-gray-100 bg-gray-100 rounded-xl focus:border-gray-100 focus:outline-none focus:bg-white tracking-wide mb-8"
-                accept="audio/*"
+                accept=".mp3"
                 required
               />
               <button
