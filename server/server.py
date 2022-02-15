@@ -61,6 +61,8 @@ class User(db.Model):
         'Podcast', backref="owner", foreign_keys="Podcast.owner_id", lazy='dynamic')
     comments = db.relationship(
         "Comment", backref="commenter", foreign_keys="Comment.commenter_id", lazy='dynamic')
+    likes = db.relationship("Like", backref="liker",
+                            foreign_keys="Like.liker_id", lazy='dynamic')
     follower = db.relationship(
         "Follow", backref='follower', foreign_keys="Follow.follower_id", lazy='dynamic')
     followee = db.relationship(
@@ -76,6 +78,17 @@ class User(db.Model):
         is_following = Follow.query.filter_by(
             follower=self, followee=user).count() > 0
         return is_following
+
+    def has_liked_podcast(self, podcast):
+        '''
+        This method will either return True or False. A user object is passed in as an argument
+        and this method will check to see if the current user is following the user that was passed
+        in as an argument. If they are following them, then True will be returned, otherwise False will
+        be returned.
+        '''
+        has_liked = Like.query.filter_by(
+            liker=self, podcast=podcast).count() > 0
+        return has_liked
 
 
 # Podcast table schema
@@ -116,6 +129,7 @@ class Like(db.Model):
     '''The 'podcast_id' variable will be equal to the podcast's id which was liked.'''
     podcast_id = db.Column(db.String, db.ForeignKey(
         "podcast.id"), nullable=False)
+    liker_id = db.Column(db.String, db.ForeignKey("user.id"), nullable=False)
 
 
 # Comment table schema
@@ -320,8 +334,8 @@ def dashboard():
             podcasts = Podcast.query.filter_by(owner=current_user).all()
             podcasts_json = []
             for podcast in podcasts:
-                podcast_dict = {"podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description,
-                                "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
+                podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description,
+                                "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count(), "currentUserLikedPodcast": current_user.has_liked_podcast(podcast)}
                 podcasts_json.append(podcast_dict)
             return jsonify({"message": "Verification successful.", "currentUserUsername": current_user.username, "podcasts": podcasts_json})
         elif response == "This token has expired.":
@@ -347,13 +361,13 @@ def save_and_compress_podcast_file(podcast_file):
     '''
     The code below will save the podcast file that is uploaded.
 
-    First a random hex token is generated for the new filename. Then 
-    Then, using os.path.splitext(), you can get the file extension of the file. 
+    First a random hex token is generated for the new filename. Then
+    Then, using os.path.splitext(), you can get the file extension of the file.
     The variable 'new_filename' will combine the random hex token which is the new filename
-    with the file extension. Next, the podcast file's path is declared and then the file is saved into 
+    with the file extension. Next, the podcast file's path is declared and then the file is saved into
     that path.
 
-    Once that is complete, the file is then compressed and the filename is 
+    Once that is complete, the file is then compressed and the filename is
     returned by this function.
     '''
 
@@ -388,7 +402,7 @@ def upload_podcast():
             The code below will first retrieve the current user by using their user ID that
             is returned in the response variable. Once the current user has been found,
             the podcast title is stored in the 'podcast_title' variable and the same thing
-            goes for the description and the podcast file. 
+            goes for the description and the podcast file.
 
             The podcast file is first passed as an argument to another function called
             'save_and_compress_podcast_file()'. That function will not only save the file but
@@ -452,8 +466,8 @@ def edit_podcast(podcast_id):
             The code below will check to see if the podcast being updated actually exists or not.
             If it does not, then a podcastExists key with a value of False will be sent to the frontend
             and the user will be redirected to a 404 page.
-            If a podcast does exist, then the code will check if the podcast owner is the current user in 
-            order to update the podcast. If the current user is the podcast owner, then the podcast will be 
+            If a podcast does exist, then the code will check if the podcast owner is the current user in
+            order to update the podcast. If the current user is the podcast owner, then the podcast will be
             updated. Otherwise, a podcastOwnerValid key with a value of False will be sent to the frontend, and the
             user will be redirected to a 403 page.
             '''
@@ -541,7 +555,7 @@ def comment(podcast_id):
             current_user = User.query.filter_by(id=response[1]).first()
             podcast = Podcast.query.filter_by(id=podcast_id).first()
             '''
-            The code below will first check to see if the podcast exists. If it does not exist, 
+            The code below will first check to see if the podcast exists. If it does not exist,
             then an error message is sent. If it does exist, then the code will add the comment to the database.
             '''
             if podcast == None:
@@ -594,7 +608,7 @@ def delete_comment(comment_id):
 @app.route('/api/comments/<podcast_id>', methods=['GET'])
 def comments(podcast_id):
     '''
-    The code below is responsible for displaying the comments of a 
+    The code below is responsible for displaying the comments of a
     specific podcast.
     '''
     if request.method == 'GET':
@@ -611,7 +625,7 @@ def comments(podcast_id):
             if podcast:
                 '''
                 First, get all the comments. Then, loop through the comments and get the commenter's username.
-                Then, create a dictionary with the comment and commenter's username. Next, append the dictionary to 
+                Then, create a dictionary with the comment and commenter's username. Next, append the dictionary to
                 the comments_json list. Finally, return that list to the frontend.
                 '''
                 comments = Comment.query.filter_by(podcast=podcast).all()
@@ -634,17 +648,18 @@ def comments(podcast_id):
 def listen():
     '''
     The code below will query all the podcasts on the PodMaster platform
-    and will send those podcasts to the frontend for them to be displayed on the 
+    and will send those podcasts to the frontend for them to be displayed on the
     Listen page.
     '''
     if request.method == 'GET':
         response = verify_authentication()
         if response[0] == "Verification successful.":
+            current_user = User.query.filter_by(id=response[1]).first()
             podcasts = Podcast.query.all()
             podcasts_json = []
             for podcast in podcasts:
-                podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description":
-                                podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
+                podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description,
+                                "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count(), "currentUserLikedPodcast": current_user.has_liked_podcast(podcast)}
                 podcasts_json.append(podcast_dict)
             return jsonify({"message": "Verification successful.", "podcasts": podcasts_json})
         elif response == "This token has expired.":
@@ -663,9 +678,9 @@ def user(username):
         if response[0] == "Verification successful.":
             '''
             The code below will first query to see if the requested user
-            profile exists or not. If it does not, it will send a 
+            profile exists or not. If it does not, it will send a
             key called userValid with a value of False and the user will be redirected
-            to a 404 page. 
+            to a 404 page.
             If the user does exist, then it will send the podcasts that that user has created
             and also send information around that user such as the username, full name, followers, etc.
             '''
@@ -678,8 +693,8 @@ def user(username):
                 podcasts_json = []
                 is_following = current_user.is_following_user(user)
                 for podcast in podcasts:
-                    podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description":
-                                    podcast.podcast_description, "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count()}
+                    podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description,
+                                    "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count(), "currentUserLikedPodcast": current_user.has_liked_podcast(podcast)}
                     podcasts_json.append(podcast_dict)
                 return jsonify({"message": "Verification successful.", "userValid": True, "currentUserUsername": current_user.username, "fullName": f'{user.first_name} {user.last_name}', "username": user.username, "followers": user.followee.count(), "following": user.follower.count(), "currentUserFollowingUser": is_following, "podcasts": podcasts_json})
         elif response == "This token has expired.":
@@ -691,7 +706,7 @@ def user(username):
 
 
 # Follow/Unfollow API Route.
-@app.route("/api/<action>", methods=['POST'])
+@app.route("/api/<action>/user", methods=['POST'])
 def follow_unfollow(action):
     if request.method == 'POST':
         response = verify_authentication()
@@ -723,7 +738,7 @@ def follow_unfollow(action):
                         db.session.add(new_follow)
                         db.session.commit()
                         return jsonify({'message': 'Verification successful.', "userValid": True, 'following': True})
-                    elif (current_user.is_following_user(user) and action == "follow") or (not current_user.is_following_user(user) and action == "follow"):
+                    elif (current_user.is_following_user(user) and action == "follow") or (not current_user.is_following_user(user) and action == "unfollow"):
                         return jsonify({"message": "Verification successful.", "userValid": True, "error": "Cannot do that."})
                     elif action != "follow" or action != "unfollow":
                         return jsonify({"message": "Verification successful.", "userValid": True, "error": "Invalid action."})
@@ -735,6 +750,44 @@ def follow_unfollow(action):
             return jsonify({"message": "Decoding error."})
         elif response == "Something went wrong":
             return jsonify({"message": "Something went wrong."})
+
+
+# Like/Unlike API Route
+@app.route("/api/<action>/podcast", methods=['POST'])
+def like_unlike(action):
+    if request.method == "POST":
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            '''
+            The code below will handle liking and unliking podcasts.
+            It will first query the post that was given from the request and
+            the current user. Once it has done that, it will check to see if the current
+            user has already liked the podcast. If they have and the action is to unlike, then the
+            like is removed. If the action was to like and the user has not liked the podcast, then it wil
+            add the like to the podcast. If the action was not a valid action, it will return an error.
+            '''
+            current_user = User.query.filter_by(id=response[1]).first()
+            if current_user:
+                podcast_id = request.json['podcastId']
+                podcast = Podcast.query.filter_by(id=podcast_id).first()
+                if podcast:
+                    if current_user.has_liked_podcast(podcast) and action == "unlike":
+                        like_object = Like.query.filter_by(
+                            liker=current_user, podcast=podcast).first()
+                        db.session.delete(like_object)
+                        db.session.commit()
+                        return jsonify({'message': 'Verification successful.', "podcastValid": True, 'liked': False})
+                    elif not current_user.has_liked_podcast(podcast) and action == "like":
+                        new_like = Like(liker=current_user, podcast=podcast)
+                        db.session.add(new_like)
+                        db.session.commit()
+                        return jsonify({'message': 'Verification successful.', "podcastValid": True, 'liked': True})
+                    elif (current_user.has_liked_podcast(podcast) and action == "like") or (not current_user.has_liked_podcast(podcast) and action == "unlike"):
+                        return jsonify({"message": "Verification successful.", "podcastValid": True, "error": "Cannot do that."})
+                    elif action != "like" or action != "unlike":
+                        return jsonify({"message": "Verification successful.", "podcastValid": True, "error": "Invalid action."})
+                else:
+                    return jsonify({"message": "Verification successful.", "podcastValid": False})
 
 
 # Account API route.
