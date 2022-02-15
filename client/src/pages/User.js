@@ -73,7 +73,7 @@ function User() {
   const followAndUnfollow = (action) => {
     axios
       .post(
-        `/api/${action}`,
+        `/api/${action}/user`,
         {
           userUsername,
         },
@@ -101,6 +101,65 @@ function User() {
             if (response.data.error === "You cannot follow yourself.") {
               setForbidden(true);
             } else if (
+              response.data.error === "Invalid action." ||
+              response.data.error === "Cannot do that."
+            ) {
+              setNotFound(true);
+            }
+          } else {
+            setNotFound(true);
+          }
+        }
+      });
+  };
+
+  const likeAndUnlikePodcast = (action, podcastId) => {
+    axios
+      .post(
+        `/api/${action}/podcast`,
+        {
+          podcastId,
+        },
+        {
+          headers: {
+            "x-access-token": localStorage.getItem("token"),
+          },
+        }
+      )
+      .then((response) => {
+        if (response.data.message !== "Verification successful.") {
+          setLoggedIn(false);
+          localStorage.removeItem("token");
+        }
+
+        if (response.data.message === "Verification successful.") {
+          if (response.data.podcastValid) {
+            if (response.data.liked) {
+              setPodcasts(
+                podcasts.map((podcast) =>
+                  podcast.podcast_id === podcastId
+                    ? {
+                        ...podcast,
+                        likes: podcast.likes + 1,
+                        currentUserLikedPodcast: true,
+                      }
+                    : podcast
+                )
+              );
+            } else {
+              setPodcasts(
+                podcasts.map((podcast) =>
+                  podcast.podcast_id === podcastId
+                    ? {
+                        ...podcast,
+                        likes: podcast.likes - 1,
+                        currentUserLikedPodcast: false,
+                      }
+                    : podcast
+                )
+              );
+            }
+            if (
               response.data.error === "Invalid action." ||
               response.data.error === "Cannot do that."
             ) {
@@ -244,7 +303,24 @@ function User() {
                           )}
                         </div>
                         <div className="flex justify-between items-center">
-                          <AiOutlineHeart className="text-2xl cursor-pointer" />
+                          {podcast.currentUserLikedPodcast ? (
+                            <AiFillHeart
+                              onClick={() =>
+                                likeAndUnlikePodcast(
+                                  "unlike",
+                                  podcast.podcast_id
+                                )
+                              }
+                              className="text-2xl cursor-pointer"
+                            />
+                          ) : (
+                            <AiOutlineHeart
+                              onClick={() =>
+                                likeAndUnlikePodcast("like", podcast.podcast_id)
+                              }
+                              className="text-2xl cursor-pointer"
+                            />
+                          )}
                           <Link
                             to={{ pathname: `/comment/${podcast.podcast_id}` }}
                           >
