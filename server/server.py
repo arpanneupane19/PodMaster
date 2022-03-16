@@ -6,12 +6,11 @@ from flask_bcrypt import Bcrypt
 from flask_mail import Mail, Message
 import os
 import jwt
-import json
-import secrets
 from dotenv import load_dotenv
 import datetime
 from PIL import Image
-from uuid import uuid4
+import secrets
+import uuid
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -33,7 +32,7 @@ mail = Mail(app)
 
 # User table schema
 class User(db.Model):
-    id = db.Column(db.String, primary_key=True, default=uuid4().hex)
+    id = db.Column(db.String, primary_key=True, default=uuid.uuid4())
     first_name = db.Column(db.String(), nullable=False)
     last_name = db.Column(db.String(), nullable=False)
     username = db.Column(db.String(15), unique=True, nullable=False)
@@ -43,15 +42,12 @@ class User(db.Model):
     The 'profile_image' is the profile picture of the user. This column will contain
     the profile picture's filename and the file will be located in the 'profile_pics'
     directory in the server.
-
     The 'podcasts' variable will create a relationship with the Podcast table.
     A user can create many podcasts and all those podcasts will belong to one user
     and that user is labeled as the owner which is also the back-reference.
-
     The 'comments' variable will create a relationship with the Comment table.
     Each comment will have a commenter which is the user that created the comment
     and a podcast which is the podcast in which the comment was posted on.
-
     The 'follower' and 'followee' variables will create a relationship with the Follow table.
     Each follow object will have a follower and a followee.
     '''
@@ -93,22 +89,18 @@ class User(db.Model):
 
 # Podcast table schema
 class Podcast(db.Model):
-    id = db.Column(db.String, primary_key=True, default=uuid4().hex)
+    id = db.Column(db.Integer, primary_key=True, default=uuid.uuid4())
     '''
     The 'owner_id' variable will be equal to the owner's id in the database.
     The 'podcast_title' is the title of the podcast and the 'podcast_description'
     is just a small description on things that are discussed in the podcast.
-
     The 'podcast_title' and 'podcast_description' columns are self-explanatory.
-
     The 'podcast_file' is the audio file for the podcast. This column will contain
     that file's name and the file will be located in the 'podcast_files' directory in
     the server.
-
     The 'likes' variable will create a relationship with the Like table.
     Each podcast will have a certain number of likes and each like object
     has a user that liked a podcast and the podcast that was liked.
-
     The 'comments' variable will create a relationship with the Comment table.
     Each comment will have a podcast that the comment was posted on and a user
     which is the user that created the comment on that specific podcast.
@@ -134,11 +126,10 @@ class Like(db.Model):
 
 # Comment table schema
 class Comment(db.Model):
-    id = db.Column(db.String, primary_key=True, default=uuid4().hex)
+    id = db.Column(db.Integer, primary_key=True, default=uuid.uuid4())
     '''
     The 'commenter_id' will be equal to the commenter's id in the database.
     It can be also known as the user that created the comment on the podcast.
-
     The 'podcast_id' will be equal to the podcast that was being commented on.
     This value will just be the id of that podcast.
     '''
@@ -155,10 +146,8 @@ class Follow(db.Model):
     '''
     The 'follower_id' is the user id of the person who is the follower
     of another user.
-
     The 'followee_id' is the user id of the person who was followed
     by another user.
-
     For example, if user_1 follows user_2, user_1 is the follower, and user_2
     is the followee.
     '''
@@ -371,9 +360,9 @@ def save_and_compress_podcast_file(podcast_file):
     returned by this function.
     '''
 
-    random_hex = secrets.token_hex(16)
+    hex_string = secrets.token_hex(16)
     file_ext = os.path.splitext(secure_filename(podcast_file.filename))[1]
-    new_filename = random_hex + file_ext
+    new_filename = hex_string + file_ext
     podcast_file_path = os.path.join(
         app.root_path, 'podcast_files', new_filename)
     podcast_file.save(podcast_file_path)
@@ -932,9 +921,9 @@ def save_and_compress_file(file):
     250x250. Then the code will return the filename to the 'update_profile_picture()' 
     so that the new changes can be saved into the database.
     '''
-    random_hex = secrets.token_hex(16)
+    hex_string = secrets.token_hex(16)
     file_ext = os.path.splitext(secure_filename(file.filename))[1]
-    new_filename = random_hex + file_ext
+    new_filename = hex_string + file_ext
     file_path = os.path.join(app.root_path, 'profile_pics', new_filename)
     file.save(file_path)
 
