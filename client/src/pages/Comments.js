@@ -9,7 +9,6 @@ function Comments() {
   const [loggedIn, setLoggedIn] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [commentNotFound, setCommentNotFound] = useState(false);
-  const [commentDeleted, setCommentDeleted] = useState(false);
   const [forbidden, setForbidden] = useState(false);
   const [loading, setLoading] = useState(true);
   const [podcastTitle, setPodcastTitle] = useState("");
@@ -44,7 +43,7 @@ function Comments() {
         }
       });
     setLoading(false);
-  }, [podcastId, commentDeleted]);
+  }, [podcastId]);
 
   const deleteComment = (id) => {
     axios
@@ -57,7 +56,9 @@ function Comments() {
         if (response.data.commentExists) {
           if (response.data.commentOwnerValid) {
             if (response.data.commentDeleted) {
-              setCommentDeleted(true);
+              setComments(
+                comments.filter((comment) => comment.commentId !== id)
+              );
             }
           } else {
             setForbidden(true);
