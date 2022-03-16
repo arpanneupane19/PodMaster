@@ -4,6 +4,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_mail import Mail, Message
+from sqlalchemy.dialects.postgresql import UUID
 import os
 import jwt
 from dotenv import load_dotenv
@@ -32,7 +33,7 @@ mail = Mail(app)
 
 # User table schema
 class User(db.Model):
-    id = db.Column(db.String, primary_key=True, default=uuid.uuid4())
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     first_name = db.Column(db.String(), nullable=False)
     last_name = db.Column(db.String(), nullable=False)
     username = db.Column(db.String(15), unique=True, nullable=False)
