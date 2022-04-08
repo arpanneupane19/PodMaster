@@ -5,6 +5,7 @@ import axios from "axios";
 import { AiOutlineHeart, AiFillHeart, AiOutlineComment } from "react-icons/ai";
 import { FiEdit3, FiTrash2 } from "react-icons/fi";
 import ClipLoader from "react-spinners/ClipLoader";
+import ReactAudioPlayer from "react-audio-player";
 
 function Dashboard() {
   const [loggedIn, setLoggedIn] = useState(true);
@@ -242,6 +243,10 @@ function Dashboard() {
                               className="text-2xl cursor-pointer"
                             />
                           )}
+                          <ReactAudioPlayer
+                            src={"/api/return-podcast/" + podcast.podcast_id}
+                            controls
+                          />
                           <Link
                             to={{ pathname: `/comment/${podcast.podcast_id}` }}
                           >
