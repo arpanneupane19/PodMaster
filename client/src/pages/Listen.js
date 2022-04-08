@@ -4,6 +4,7 @@ import { LoggedInNavbar } from "../components/Navbar";
 import axios from "axios";
 import { AiOutlineHeart, AiFillHeart, AiOutlineComment } from "react-icons/ai";
 import ClipLoader from "react-spinners/ClipLoader";
+import ReactAudioPlayer from "react-audio-player";
 
 function Listen() {
   const [loggedIn, setLoggedIn] = useState(true);
@@ -93,6 +94,10 @@ function Listen() {
         }
       });
   };
+
+  if (notFound) {
+    return <Redirect to="404-not-found" />;
+  }
 
   if (loading) {
     return (
@@ -191,6 +196,10 @@ function Listen() {
                                 className="text-2xl cursor-pointer"
                               />
                             )}
+                            <ReactAudioPlayer
+                              src={"/api/return-podcast/" + podcast.podcast_id}
+                              controls
+                            />
                             <Link
                               to={{
                                 pathname: `/comment/${podcast.podcast_id}`,
