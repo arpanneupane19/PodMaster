@@ -32,7 +32,8 @@ mail = Mail(app)
 
 # User table schema
 class User(db.Model):
-    id = db.Column(db.String, primary_key=True, default=uuid.uuid4())
+    id = db.Column(db.String(), primary_key=True,
+                   default=str(uuid.uuid4()), unique=True)
     first_name = db.Column(db.String(), nullable=False)
     last_name = db.Column(db.String(), nullable=False)
     username = db.Column(db.String(15), unique=True, nullable=False)
@@ -89,7 +90,7 @@ class User(db.Model):
 
 # Podcast table schema
 class Podcast(db.Model):
-    id = db.Column(db.Integer, primary_key=True, default=uuid.uuid4())
+    id = db.Column(db.String, primary_key=True, default=str(uuid.uuid4()))
     '''
     The 'owner_id' variable will be equal to the owner's id in the database.
     The 'podcast_title' is the title of the podcast and the 'podcast_description'
@@ -126,7 +127,7 @@ class Like(db.Model):
 
 # Comment table schema
 class Comment(db.Model):
-    id = db.Column(db.Integer, primary_key=True, default=uuid.uuid4())
+    id = db.Column(db.Integer, primary_key=True, default=str(uuid.uuid4()))
     '''
     The 'commenter_id' will be equal to the commenter's id in the database.
     It can be also known as the user that created the comment on the podcast.
