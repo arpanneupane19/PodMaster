@@ -325,6 +325,7 @@ function User() {
                           <ReactAudioPlayer
                             src={"/api/return-podcast/" + podcast.podcast_id}
                             controls
+                            controlsList={"nodownload"}
                           />
                           <Link
                             to={{ pathname: `/comment/${podcast.podcast_id}` }}
