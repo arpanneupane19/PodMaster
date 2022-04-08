@@ -9,6 +9,7 @@ import {
   AiOutlineEdit,
 } from "react-icons/ai";
 import ClipLoader from "react-spinners/ClipLoader";
+import ReactAudioPlayer from "react-audio-player";
 
 function User() {
   const [loggedIn, setLoggedIn] = useState(true);
@@ -321,6 +322,10 @@ function User() {
                               className="text-2xl cursor-pointer"
                             />
                           )}
+                          <ReactAudioPlayer
+                            src={"/api/return-podcast/" + podcast.podcast_id}
+                            controls
+                          />
                           <Link
                             to={{ pathname: `/comment/${podcast.podcast_id}` }}
                           >
