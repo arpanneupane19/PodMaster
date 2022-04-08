@@ -199,6 +199,7 @@ function Listen() {
                             <ReactAudioPlayer
                               src={"/api/return-podcast/" + podcast.podcast_id}
                               controls
+                              controlsList={"nodownload"}
                             />
                             <Link
                               to={{
