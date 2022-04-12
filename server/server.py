@@ -30,10 +30,13 @@ app.config['MAIL_USE_SSL'] = True
 mail = Mail(app)
 
 
+def uuid_gen():
+    return str(uuid.uuid4())
+
 # User table schema
 class User(db.Model):
-    id = db.Column(db.String(), primary_key=True,
-                   default=str(uuid.uuid4()), unique=True)
+    id = db.Column(db.String, primary_key=True,
+                   default=uuid_gen, unique=True)
     first_name = db.Column(db.String(), nullable=False)
     last_name = db.Column(db.String(), nullable=False)
     username = db.Column(db.String(15), unique=True, nullable=False)
@@ -90,7 +93,7 @@ class User(db.Model):
 
 # Podcast table schema
 class Podcast(db.Model):
-    id = db.Column(db.String, primary_key=True, default=str(uuid.uuid4()))
+    id = db.Column(db.String, primary_key=True, default=uuid_gen)
     '''
     The 'owner_id' variable will be equal to the owner's id in the database.
     The 'podcast_title' is the title of the podcast and the 'podcast_description'
@@ -118,7 +121,7 @@ class Podcast(db.Model):
 
 # Like table schema
 class Like(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String, primary_key=True, default=uuid_gen)
     '''The 'podcast_id' variable will be equal to the podcast's id which was liked.'''
     podcast_id = db.Column(db.String, db.ForeignKey(
         "podcast.id"), nullable=False)
@@ -127,7 +130,7 @@ class Like(db.Model):
 
 # Comment table schema
 class Comment(db.Model):
-    id = db.Column(db.Integer, primary_key=True, default=str(uuid.uuid4()))
+    id = db.Column(db.String, primary_key=True, default=uuid_gen)
     '''
     The 'commenter_id' will be equal to the commenter's id in the database.
     It can be also known as the user that created the comment on the podcast.
@@ -143,7 +146,7 @@ class Comment(db.Model):
 
 # Follower table schema
 class Follow(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String, primary_key=True, default=uuid_gen)
     '''
     The 'follower_id' is the user id of the person who is the follower
     of another user.
