@@ -33,6 +33,7 @@ mail = Mail(app)
 def uuid_gen():
     return str(uuid.uuid4())
 
+
 # User table schema
 class User(db.Model):
     id = db.Column(db.String, primary_key=True,
@@ -42,6 +43,7 @@ class User(db.Model):
     username = db.Column(db.String(15), unique=True, nullable=False)
     email = db.Column(db.String(320), unique=True, nullable=False)
     password = db.Column(db.String(80), nullable=False)
+    deactivated = db.Column(db.Boolean, default=False, nullable=False)
     '''
     The 'profile_image' is the profile picture of the user. This column will contain
     the profile picture's filename and the file will be located in the 'profile_pics'
@@ -58,15 +60,15 @@ class User(db.Model):
     profile_image = db.Column(
         db.String(30), nullable=False, default='default.png')
     podcasts = db.relationship(
-        'Podcast', backref="owner", foreign_keys="Podcast.owner_id", lazy='dynamic')
+        'Podcast', backref="owner", foreign_keys="Podcast.owner_id", lazy='dynamic', cascade="all,delete")
     comments = db.relationship(
-        "Comment", backref="commenter", foreign_keys="Comment.commenter_id", lazy='dynamic')
+        "Comment", backref="commenter", foreign_keys="Comment.commenter_id", lazy='dynamic', cascade="all,delete")
     likes = db.relationship("Like", backref="liker",
-                            foreign_keys="Like.liker_id", lazy='dynamic')
+                            foreign_keys="Like.liker_id", lazy='dynamic', cascade="all,delete")
     follower = db.relationship(
-        "Follow", backref='follower', foreign_keys="Follow.follower_id", lazy='dynamic')
+        "Follow", backref='follower', foreign_keys="Follow.follower_id", lazy='dynamic', cascade="all,delete")
     followee = db.relationship(
-        "Follow", backref='followee', foreign_keys="Follow.followee_id", lazy='dynamic')
+        "Follow", backref='followee', foreign_keys="Follow.followee_id", lazy='dynamic', cascade="all,delete")
 
     def is_following_user(self, user):
         '''
@@ -114,9 +116,9 @@ class Podcast(db.Model):
     podcast_description = db.Column(db.String(500), nullable=False)
     podcast_file = db.Column(db.String(30), unique=True, nullable=False)
     likes = db.relationship("Like", backref="podcast",
-                            foreign_keys="Like.podcast_id", lazy='dynamic')
+                            foreign_keys="Like.podcast_id", lazy='dynamic', cascade="all,delete")
     comments = db.relationship(
-        "Comment", backref="podcast", foreign_keys="Comment.podcast_id", lazy='dynamic')
+        "Comment", backref="podcast", foreign_keys="Comment.podcast_id", lazy='dynamic', cascade="all,delete")
 
 
 # Like table schema
@@ -388,7 +390,7 @@ def upload_podcast():
         elif response == "Something went wrong":
             return jsonify({"message": "Something went wrong."})
 
-    if request.method == 'POST':
+    elif request.method == 'POST':
         response = verify_authentication()
         if response[0] == "Verification successful.":
             '''
@@ -450,7 +452,7 @@ def edit_podcast(podcast_id):
         elif response == "Something went wrong":
             return jsonify({"message": "Something went wrong."})
 
-    if request.method == 'POST':
+    elif request.method == 'POST':
         response = verify_authentication()
         if response[0] == "Verification successful.":
             current_user = User.query.filter_by(id=response[1]).first()
@@ -507,10 +509,6 @@ def delete_podcast(podcast_id):
                 if podcast.owner.id == current_user.id:
                     if os.path.exists(f'podcast_files/{podcast.podcast_file}'):
                         os.remove(f'podcast_files/{podcast.podcast_file}')
-                        for like in podcast.likes:
-                            db.session.delete(like)
-                        for comment in podcast.comments:
-                            db.session.delete(comment)
                         db.session.delete(podcast)
                         db.session.commit()
                         print("The podcast, likes, and comments have been deleted.")
@@ -542,7 +540,7 @@ def comment(podcast_id):
         elif response == "Something went wrong":
             return jsonify({"message": "Something went wrong."})
 
-    if request.method == 'POST':
+    elif request.method == 'POST':
         response = verify_authentication()
         if response[0] == "Verification successful.":
             current_user = User.query.filter_by(id=response[1]).first()
@@ -803,7 +801,7 @@ def account():
         elif response == "Something went wrong":
             return jsonify({"message": "Something went wrong."})
 
-    if request.method == 'POST':
+    elif request.method == 'POST':
         response = verify_authentication()
         if response[0] == "Verification successful.":
             current_user = User.query.filter_by(id=response[1]).first()
@@ -859,6 +857,21 @@ def account():
             if not username_valid or not email_valid:
                 return jsonify({"message": "Verification successful.", "accountUpdated": False, "error": "Username or email belongs to another user."})
 
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+
+# API route for advanced account settings
+@app.route("/api/advanced-account-settings", methods=['GET'])
+def advanced_account_settings():
+    if request.method == 'GET':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            return jsonify({"message": "Verification successful."})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
@@ -953,7 +966,7 @@ def update_profile_picture():
         elif response == "Something went wrong":
             return jsonify({"message": "Something went wrong."})
 
-    if request.method == 'POST':
+    elif request.method == 'POST':
         response = verify_authentication()
         if response[0] == 'Verification successful.':
             current_user = User.query.filter_by(id=response[1]).first()
@@ -1050,16 +1063,16 @@ def reset_password(token):
             print("Decoding error.")
             return jsonify({"message": "Decoding error."})
 
-    '''
-    If a POST request is sent, the code will first check if the token that was passed 
-    in the URL is valid. If it is valid, then it will get the user's account by using the token,
-    then it will hash the new password, then that new password will be saved and a
-    verification successful message along with a 'passwordUpdated' value set to True will be sent
-    to the frontend.
-    
-    If there are any errors, it will send those errors.
-    '''
-    if request.method == 'POST':
+    elif request.method == 'POST':
+        '''
+        If a POST request is sent, the code will first check if the token that was passed 
+        in the URL is valid. If it is valid, then it will get the user's account by using the token,
+        then it will hash the new password, then that new password will be saved and a
+        verification successful message along with a 'passwordUpdated' value set to True will be sent
+        to the frontend.
+
+        If there are any errors, it will send those errors.
+        '''
         try:
             decoded_email = jwt.decode(token, os.environ.get(
                 "JWT_SECRET_KEY"), algorithms=['HS256'])
