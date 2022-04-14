@@ -209,6 +209,14 @@ function Dashboard() {
                   </Link>
                   .
                 </span>
+                <span>
+                  <Link
+                    className="underline hover:no-underline"
+                    to="/advanced-account-settings"
+                  >
+                    Advanced Account Settings
+                  </Link>
+                </span>
               </div>
               <button
                 type="submit"
