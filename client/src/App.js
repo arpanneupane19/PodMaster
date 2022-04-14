@@ -13,6 +13,7 @@ import Comments from "./pages/Comments";
 import Listen from "./pages/Listen";
 import User from "./pages/User";
 import Account from "./pages/Account";
+import AdvancedAccountSettings from "./pages/AdvancedAccountSettings";
 import ChangePassword from "./pages/ChangePassword";
 import ProfilePicture from "./pages/ProfilePicture";
 import Forbidden from "./pages/403";
@@ -77,6 +78,10 @@ function App() {
 
         <Route exact path="/account">
           <Account />
+        </Route>
+
+        <Route exact path="/advanced-account-settings">
+          <AdvancedAccountSettings />
         </Route>
 
         <Route exact path="/change-password">
