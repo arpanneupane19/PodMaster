@@ -104,6 +104,10 @@ function AdvancedAccountSettings() {
                 </button>
               </div>
             </div>
+            <br></br>
+            <Link to="/account" className="underline tracking-wide">
+              Cancel
+            </Link>
           </div>
         </div>
       </div>
