@@ -880,6 +880,35 @@ def advanced_account_settings():
             return jsonify({"message": "Something went wrong."})
 
 
+# API route for account deactivation
+@app.route("/api/deactivate-account", methods=['POST'])
+def deactivate_account():
+    pass
+
+
+# API route for account deletion
+@app.route("/api/delete-account", methods=['POST'])
+def delete_account():
+    if request.method == 'POST':
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            current_user = User.query.filter_by(id=response[1]).first()
+            current_user_podcasts = current_user.podcasts
+            for podcast in current_user_podcasts:
+                filename = podcast.podcast_file
+                if os.path.exists(f'podcast_files/{filename}'):
+                    os.remove(f'podcast_files/{filename}')
+            db.session.delete(current_user)
+            db.session.commit()
+            return {'message': 'Account has been deleted.'}
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
+
+
 # API route for changing user passwords.
 @app.route("/api/change-password", methods=['GET', 'POST'])
 def change_password():
