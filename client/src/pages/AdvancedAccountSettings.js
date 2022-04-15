@@ -27,6 +27,25 @@ function AdvancedAccountSettings() {
   if (!localStorage.getItem("token") || !loggedIn) {
     return <Redirect to="/login" />;
   }
+
+  const deactivateAccount = () => {};
+
+  const deleteAccount = (event) => {
+    event.preventDefault();
+    axios
+      .post("/api/delete-account", null, {
+        headers: {
+          "x-access-token": localStorage.getItem("token"),
+        },
+      })
+      .then((response) => {
+        if (response.data.message === "Account has been deleted.") {
+          setLoggedIn(false);
+          localStorage.removeItem("token");
+        }
+      });
+  };
+
   if (loading) {
     return (
       <div
@@ -74,10 +93,13 @@ function AdvancedAccountSettings() {
                   When you delete your account, your account will be completely
                   removed from the PodMaster app and your podcasts, likes,
                   followers, and comments will also be deleted. There is no way
-                  to recover your account once you delete, so proceed with
-                  caution.
+                  to recover your account once you click the button below, so
+                  proceed with caution.
                 </p>
-                <button className="bg-white p-2 text-red-500 rounded-xl">
+                <button
+                  className="bg-white p-2 text-red-500 rounded-xl"
+                  onClick={deleteAccount}
+                >
                   Delete Account
                 </button>
               </div>
