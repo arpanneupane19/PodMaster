@@ -890,6 +890,13 @@ def deactivate_account():
 @app.route("/api/delete-account", methods=['POST'])
 def delete_account():
     if request.method == 'POST':
+        '''
+        The code below will first get the current user. Then, it will get a list of the current user's podcasts.
+        It'll iterate through the list and remove the podcast file for each podcast that the user has since the user 
+        account is being deleted. The db.session.delete(current_user) will remove the user, their podcasts, likes,
+        comments, and follows because of cascading.
+        Once that has been completed, a response to the frontend is sent clarifying that the account has been deleted.
+        '''
         response = verify_authentication()
         if response[0] == "Verification successful.":
             current_user = User.query.filter_by(id=response[1]).first()
@@ -900,7 +907,7 @@ def delete_account():
                     os.remove(f'podcast_files/{filename}')
             db.session.delete(current_user)
             db.session.commit()
-            return {'message': 'Account has been deleted.'}
+            return jsonify({'message': 'Account has been deleted.'})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
