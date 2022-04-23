@@ -1,5 +1,5 @@
 # Code written by Arpan Neupane.
-# Copyright (c) Arpan Neupane 2022. All rights reserved.
+# Copyright (c) Arpan Neupane 2022-23. All rights reserved.
 
 from configs import *
 from models import *
