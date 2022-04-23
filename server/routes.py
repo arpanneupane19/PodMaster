@@ -99,6 +99,9 @@ def login():
             "message": "User does not exist."
         })
     if user:
+        if user.deactivated == True:
+            user.deactivated = False
+            db.session.commit()
         if not bcrypt.check_password_hash(user.password, password):
             print("Invalid password.")
             return jsonify({
@@ -503,9 +506,12 @@ def listen():
             podcasts = Podcast.query.all()
             podcasts_json = []
             for podcast in podcasts:
-                podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description,
-                                "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count(), "currentUserLikedPodcast": current_user.has_liked_podcast(podcast)}
-                podcasts_json.append(podcast_dict)
+                if podcast.owner.deactivated == False:
+                    podcast_dict = {"podcast_owner_username": podcast.owner.username, "podcast_title": podcast.podcast_title, "podcast_description": podcast.podcast_description,
+                                    "podcast_id": podcast.id, "likes": podcast.likes.count(), "comments": podcast.comments.count(), "currentUserLikedPodcast": current_user.has_liked_podcast(podcast)}
+                    podcasts_json.append(podcast_dict)
+                else:
+                    None
             return jsonify({"message": "Verification successful.", "podcasts": podcasts_json})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
@@ -530,7 +536,7 @@ def user(username):
             and also send information around that user such as the username, full name, followers, etc.
             '''
             user = User.query.filter_by(username=username).first()
-            if user == None:
+            if user == None or user.deactivated == True:
                 return jsonify({"message": "Verification successful.", "userValid": False})
             if user:
                 current_user = User.query.filter_by(id=response[1]).first()
@@ -737,7 +743,23 @@ def advanced_account_settings():
 # API route for account deactivation
 @app.route("/api/deactivate-account", methods=['POST'])
 def deactivate_account():
-    pass
+    if request.method == "POST":
+        '''
+        The code below will first get the current user. Then, it will set the deactivated column to True.
+        Once it's done that, a response to the frontend is sent clarifying that the account has been deactivated.
+        '''
+        response = verify_authentication()
+        if response[0] == "Verification successful.":
+            current_user = User.query.filter_by(id=response[1]).first()
+            current_user.deactivated = True
+            db.session.commit()
+            return jsonify({'accountDeactivated': True})
+        elif response == "This token has expired.":
+            return jsonify({"message": "This token has expired."})
+        elif response == "Decoding error.":
+            return jsonify({"message": "Decoding error."})
+        elif response == "Something went wrong":
+            return jsonify({"message": "Something went wrong."})
 
 
 # API route for account deletion
@@ -764,7 +786,7 @@ def delete_account():
                     os.remove(f'profile_pics/{current_user.profile_image}')
             db.session.delete(current_user)
             db.session.commit()
-            return jsonify({'message': 'Account has been deleted.'})
+            return jsonify({'accountDeleted': True})
         elif response == "This token has expired.":
             return jsonify({"message": "This token has expired."})
         elif response == "Decoding error.":
