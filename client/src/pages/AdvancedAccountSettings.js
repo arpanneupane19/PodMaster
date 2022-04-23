@@ -28,7 +28,19 @@ function AdvancedAccountSettings() {
     return <Redirect to="/login" />;
   }
 
-  const deactivateAccount = () => {};
+  const deactivateAccount = (event) => {
+    event.preventDefault();
+    axios
+      .post("/api/deactivate-account", null, {
+        headers: { "x-access-token": localStorage.getItem("token") },
+      })
+      .then((response) => {
+        if (response.data.accountDeactivated) {
+          setLoggedIn(false);
+          localStorage.removeItem("token");
+        }
+      });
+  };
 
   const deleteAccount = (event) => {
     event.preventDefault();
@@ -39,7 +51,7 @@ function AdvancedAccountSettings() {
         },
       })
       .then((response) => {
-        if (response.data.message === "Account has been deleted.") {
+        if (response.data.accountDeleted) {
           setLoggedIn(false);
           localStorage.removeItem("token");
         }
@@ -81,7 +93,10 @@ function AdvancedAccountSettings() {
                   on the listen page. Once you log in again, your account will
                   be reactivated.
                 </p>
-                <button className="bg-white p-2 text-red-500 rounded-xl ">
+                <button
+                  className="bg-white p-2 text-red-500 rounded-xl"
+                  onClick={deactivateAccount}
+                >
                   Deactivate Account
                 </button>
               </div>
