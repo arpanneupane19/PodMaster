@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import { Link, Redirect } from "react-router-dom";
+import Menu from "./Menu.js";
+import { FaGripLines } from "react-icons/fa";
+import { GrClose } from "react-icons/gr";
 
 export function Navbar() {
+  const [showMenu, setShowMenu] = useState(false);
+
   return (
     <div className="flex flex-col z-[100] fixed w-full">
       <nav className="navbar bg-white flex flex-row justify-between items-center py-4 px-6 font-sans antialiased tracking-wider">
@@ -21,13 +26,26 @@ export function Navbar() {
             Register
           </Link>
         </ul>
+        {showMenu ? (
+          <GrClose
+            className="md:hidden inline cursor-pointer"
+            onClick={() => setShowMenu(false)}
+          />
+        ) : (
+          <FaGripLines
+            className="md:hidden inline cursor-pointer"
+            onClick={() => setShowMenu(true)}
+          />
+        )}
       </nav>
+      {showMenu ? <Menu state="logged out" /> : <></>}
     </div>
   );
 }
 
 export function LoggedInNavbar() {
   const [loggedOut, setLoggedOut] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -65,7 +83,19 @@ export function LoggedInNavbar() {
             Logout
           </button>
         </ul>
+        {showMenu ? (
+          <GrClose
+            className="md:hidden inline cursor-pointer"
+            onClick={() => setShowMenu(false)}
+          />
+        ) : (
+          <FaGripLines
+            className="md:hidden inline cursor-pointer"
+            onClick={() => setShowMenu(true)}
+          />
+        )}
       </nav>
+      {showMenu ? <Menu state="logged in" /> : <></>}
     </div>
   );
 }
