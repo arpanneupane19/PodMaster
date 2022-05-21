@@ -15,6 +15,11 @@ from werkzeug.utils import secure_filename
 mail = Mail(app)
 
 
+@app.route('/')
+def index():
+    return app.send_static_file('index.html')
+
+
 # API route for creating new users.
 @app.route("/api/register", methods=['POST'])
 def register():
