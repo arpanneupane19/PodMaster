@@ -11,7 +11,8 @@ from dotenv import load_dotenv
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../client/build',
+            static_url_path='/')
 cors = CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
