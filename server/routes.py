@@ -543,7 +543,7 @@ def user(username):
             user = User.query.filter_by(username=username).first()
             if user == None or user.deactivated == True:
                 return jsonify({"message": "Verification successful.", "userValid": False})
-            if user:
+            if user and user.deactivated == False:
                 current_user = User.query.filter_by(id=response[1]).first()
                 podcasts = Podcast.query.filter_by(owner=user).all()
                 podcasts_json = []
