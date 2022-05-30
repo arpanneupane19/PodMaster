@@ -99,10 +99,10 @@ function Dashboard() {
                 podcasts.map((podcast) =>
                   podcast.podcast_id === podcastId
                     ? {
-                        ...podcast,
-                        likes: podcast.likes + 1,
-                        currentUserLikedPodcast: true,
-                      }
+                      ...podcast,
+                      likes: podcast.likes + 1,
+                      currentUserLikedPodcast: true,
+                    }
                     : podcast
                 )
               );
@@ -111,10 +111,10 @@ function Dashboard() {
                 podcasts.map((podcast) =>
                   podcast.podcast_id === podcastId
                     ? {
-                        ...podcast,
-                        likes: podcast.likes - 1,
-                        currentUserLikedPodcast: false,
-                      }
+                      ...podcast,
+                      likes: podcast.likes - 1,
+                      currentUserLikedPodcast: false,
+                    }
                     : podcast
                 )
               );
