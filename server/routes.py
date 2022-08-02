@@ -20,6 +20,27 @@ def index():
     return app.send_static_file('index.html')
 
 
+'''
+When encountering errors, the application will send the index.html
+file because the frontend already has code on what to display.
+'''
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return app.send_static_file('index.html'), 404
+
+
+@app.errorhandler(403)
+def page_not_found(e):
+    return app.send_static_file('index.html'), 403
+
+
+@app.errorhandler(500)
+def page_not_found(e):
+    return app.send_static_file('index.html'), 500
+
+
 # API route for creating new users.
 @app.route("/api/register", methods=['POST'])
 def register():
